@@ -5,9 +5,9 @@ import dataset
 
 if __name__ =='__main__':
     """
-    main function: 
-        Parse the arguments from the command line and setup the model for training and testing
-        Finally, showing the result and learning curve
+        Parse the arguments from the command line
+        Setup the model for training and testing
+        Show the result and learning curve
     """
     parser = ArgumentParser()
     parser.add_argument('-d', '--dataset', type=str, default='linear', help='linear/XOR dataset')
@@ -19,7 +19,7 @@ if __name__ =='__main__':
     parser.add_argument('-o', '--optimizer', type=str, default='sgd', help='sgd/momentum/adagrad/adam')
     args = parser.parse_args()
     if args.dataset == 'linear':
-        inputs, labels = dataset.generateLinear(n=100)
+        inputs, labels = dataset.generate_linear(n=100)
     elif args.dataset == 'xor':
         inputs, labels = dataset.generate_XOR_easy()
     epochs = args.epochs

@@ -1,4 +1,4 @@
-def generateLinear(n=100): 
+def generate_linear(n=100): 
     import numpy as np
     pts = np.random.uniform(0, 1, (n, 2))
     inputs = []
@@ -20,7 +20,7 @@ def generate_XOR_easy():
     for i in range(11):
         inputs.append([0.1 * i, 0.1 * i])
         labels.append(0)
-         
+
         if 0.1 * i == 0.5:
             continue
 

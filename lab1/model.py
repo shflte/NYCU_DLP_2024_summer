@@ -20,67 +20,38 @@ class FullyConnectedNetwork:
         self.epoch_arr = []
 
     def forward(self, inputs):
-        """
-        Forward propagation:
-            Since this network is a two-hidden-layer network, we need to compute 3 forward propagations.
-            Forward the data from input layer to output layer.
-        """
         hidden1 = self.layer1.forward(inputs)
         hidden2 = self.layer2.forward(hidden1)
         outputs = self.layer3.forward(hidden2)
         return outputs
 
     def backward(self, output_loss):
-        """
-        Backward propagation:
-            Compute the gradient from output layer to input layer.
-        """
-        hidden1 = self.layer3.backward(output_loss)
-        hidden2 = self.layer2.backward(hidden1)
-        loss = self.layer1.backward(hidden2)
+        hidden2 = self.layer3.backward(output_loss)
+        hidden1 = self.layer2.backward(hidden2)
+        loss = self.layer1.backward(hidden1)
         return loss
 
     def optim(self):
-        """
-        Weight Update:
-            Update the weight matrix for each layer.
-        """
         self.layer1.optimization()
         self.layer2.optimization()
         self.layer3.optimization()
 
     def predict(self, inputs):
-        """
-        Predict:
-            Predict the output based on the input data. 
-            Since the output may not be 0 or 1, we have to round it to 0 or 1 to match the label. 
-        """
         return np.round(self.forward(inputs))
 
     def MSELoss(self, predict_labels, labels):
-        """
-        MSELoss:
-            Compute the MSE Loss based on the predicted result and the ground truth.
-        """
         return np.mean((predict_labels - labels) ** 2)
 
     def derivativeMSELoss(self, predict_labels, labels):
-        """
-        Derivative MSELoss:
-            Compute the derivative of MSE loss for back propagation.
-        """
         return 2 * (predict_labels - labels) / len(labels)
 
     def train(self, inputs, labels):
         """
-        Training:
-            Train the model with 100000 epochs.
-            1. Forward the input data to get the predicted resault
-            2. Compute the MSE Loss between the predicted result and the ground truth.
-            3. Back propagation
-            4. Update the weight matrix
-
-            Also, we have to show the loss every 5000 epochs.
+            For each epoch:
+                - Forward the input to get the predicted result
+                - Compute the Loss between the result and the labels
+                - Back propagation
+                - Update the weights
         """
         for epoch in range(self.epochs):
             predicted_labels = self.forward(inputs)
@@ -94,10 +65,6 @@ class FullyConnectedNetwork:
                 print(f'Epoch: {epoch}, Loss: {loss}')
     
     def test(self, inputs, labels):
-        """
-        Testing:
-            Show the predicted result and the accuracy.
-        """
         predicted_labels = self.forward(inputs)
         print(predicted_labels)
         accuracy, count = 0, 0
@@ -108,10 +75,6 @@ class FullyConnectedNetwork:
         print(f'Accuracy : {accuracy}')
     
     def show_result(self, inputs, labels):
-        """
-        Show result:
-            Show the difference between predicted result and the ground truth.
-        """
         plt.figure()
         plt.subplot(1, 2, 1)
         plt.title('Ground Truth', fontsize=18)
@@ -132,10 +95,6 @@ class FullyConnectedNetwork:
         plt.show()
 
     def show_learning_curve(self):
-        """
-        Show learning curve:
-            Show the learning curve recorded while training.
-        """
         plt.title('Learning Curve', fontsize=18)
         plt.plot(self.epoch_arr, self.loss_arr)
         plt.show()
