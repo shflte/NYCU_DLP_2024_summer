@@ -12,13 +12,44 @@ class SquareLayer(nn.Module):
         return x ** 2
 
 class SCCNet(nn.Module):
-    def __init__(self, numClasses=0, timeSample=0, Nu=0, C=0, Nc=0, Nt=0, dropoutRate=0):
+    def __init__(self, numClasses=4, timeSample=1000, Nu=22, C=22, Nc=44, Nt=1, dropoutRate=0.5):
         super(SCCNet, self).__init__()
-        pass
 
+        self.firstConvBlock = nn.Sequential(
+            nn.Conv2d(1, Nu, (C, Nt), padding=0),
+            nn.BatchNorm2d(Nu),
+        )
+
+        self.secondConvBlock = nn.Sequential(
+            nn.Conv2d(1, Nc, (Nu, 12), padding=(0, 6)),
+            nn.BatchNorm2d(Nc),
+        )
+
+        self.pool = nn.AvgPool2d((1, 62))
+
+        self.fc = nn.Linear(Nc * (timeSample // 62), numClasses)
+        self.dropout = nn.Dropout(dropoutRate)
+        self.softmax = nn.Softmax(dim=1)
+        
+    
     def forward(self, x):
-        pass
+        x = self.firstConvBlock(x)
 
-    # if needed, implement the get_size method for the in channel of fc layer
+        # Permute dimensions
+        x = x.permute(0, 2, 1, 3)
+
+        x = self.secondConvBlock(x)
+
+        x = self.pool(x)
+
+        # Flatten
+        x = x.view(x.size(0), -1)
+
+        x = self.fc(x)
+        x = self.dropout(x)
+        x = self.softmax(x)
+        
+        return x
+    
     def get_size(self, C, N):
         pass
