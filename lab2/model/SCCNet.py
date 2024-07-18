@@ -27,6 +27,7 @@ class SCCNet(nn.Module):
 
         self.pool = nn.AvgPool2d((1, 62))
 
+        self.flatten = nn.Flatten()
         self.fc = nn.Linear(Nc * (timeSample // 62), numClasses)
         self.dropout = nn.Dropout(dropoutRate)
         self.softmax = nn.Softmax(dim=1)
@@ -42,14 +43,31 @@ class SCCNet(nn.Module):
 
         x = self.pool(x)
 
-        # Flatten
-        x = x.view(x.size(0), -1)
-
+        x = self.flatten(x)
         x = self.fc(x)
         x = self.dropout(x)
         x = self.softmax(x)
-        
+
         return x
     
     def get_size(self, C, N):
         pass
+
+
+# # 假設輸入數據有22個通道和1000個時間點
+C = 11  # Channels
+T = 1000  # Time points
+batch_size = 8  # 批次大小
+
+# # 創建隨機輸入數據
+dummy_input = torch.randn(batch_size, 1, C, T)
+
+# # 創建模型實例
+model = SCCNet(numClasses=4, timeSample=T, Nu=22, C=C, Nc=44, Nt=3, dropoutRate=0.5)
+print(model)
+
+# # 對輸入數據進行前向傳播
+output = model(dummy_input)
+
+# # 打印輸出形狀
+print(f'Output shape: {output.shape}')  # 應該是 (batch_size, numClasses)
