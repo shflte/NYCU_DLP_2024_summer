@@ -1,4 +1,6 @@
 import torch
+import numpy as np
+import os
 
 class MIBCI2aDataset(torch.utils.data.Dataset):
     def _getFeatures(self, filePath):
@@ -7,7 +9,15 @@ class MIBCI2aDataset(torch.utils.data.Dataset):
         read all the preprocessed data from the file path, read it using np.load,
         and concatenate them into a single numpy array
         """
-        pass
+        features = []
+        for file in os.listdir(filePath):
+            if file.endswith('.npy'):
+                data = np.load(os.path.join(filePath, file))
+                features.append(data)
+        if features:
+            return np.concatenate(features, axis=0)
+        else:
+            return np.array([])
 
     def _getLabels(self, filePath):
         # implement the getLabels method
@@ -15,7 +25,15 @@ class MIBCI2aDataset(torch.utils.data.Dataset):
         read all the preprocessed labels from the file path, read it using np.load,
         and concatenate them into a single numpy array
         """
-        pass
+        labels = []
+        for file in os.listdir(filePath):
+            if file.endswith('.npy'):
+                data = np.load(os.path.join(filePath, file))
+                labels.append(data)
+        if labels:
+            return np.concatenate(labels, axis=0)
+        else:
+            return np.array([])
 
     def __init__(self, mode):
         # remember to change the file path according to different experiments
@@ -37,8 +55,8 @@ class MIBCI2aDataset(torch.utils.data.Dataset):
 
     def __len__(self):
         # implement the len method
-        pass
+        return len(self.features)
 
     def __getitem__(self, idx):
         # implement the getitem method
-        pass
+        return self.features[idx], self.labels[idx]
