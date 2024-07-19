@@ -4,15 +4,14 @@ from torch.utils.data import DataLoader
 from argparse import ArgumentParser
 
 from model.SCCNet import SCCNet
-from utils import parse_args
 from Dataloader import MIBCI2aDataset
 
 
 def main():
     # parse args
     parser = ArgumentParser()
-    args = parser.parse_args()
     parser.add_argument('-b', '--batch-size', type=int, default=64, help='batch size')
+    args = parser.parse_args()
     batch_size = args.batch_size
 
     # dataset
