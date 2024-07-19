@@ -25,6 +25,8 @@ class SCCNet(nn.Module):
             nn.BatchNorm2d(Nc),
         )
 
+        self.squareLayer = SquareLayer()
+
         self.pool = nn.AvgPool2d((1, 62))
 
         self.flatten = nn.Flatten()
@@ -41,6 +43,8 @@ class SCCNet(nn.Module):
 
         x = self.secondConvBlock(x)
 
+        x = self.squareLayer(x)
+
         x = self.pool(x)
 
         x = self.flatten(x)
@@ -49,7 +53,7 @@ class SCCNet(nn.Module):
         x = self.softmax(x)
 
         return x
-    
+
     def get_size(self, C, N):
         pass
 
