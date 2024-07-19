@@ -1,12 +1,11 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import DataLoader, TensorDataset
-from argparse import ArgumentParser
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from model.SCCNet import SCCNet
-from utils import show_result, show_learning_curve, parse_args
+from utils import show_accuracy, show_learning_curve, parse_args
 from Dataloader import MIBCI2aDataset
 
 
@@ -20,7 +19,10 @@ def main():
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
     # model
-    model = SCCNet(numClasses=4, timeSample=1000, Nu=22, C=22, Nc=44, Nt=1, dropoutRate=0.5)
+    features, _ = next(iter(train_loader))
+    timeSample = features.shape[3]
+    C = features.shape[2]
+    model = SCCNet(numClasses=4, timeSample=timeSample, Nu=22, C=C, Nc=44, Nt=1, dropoutRate=0.5)
     model = model.cuda()
 
     # optimizer
@@ -75,8 +77,8 @@ def main():
     torch.save(model.state_dict(), f"model/trained/model.pth")
 
     # show result
-    show_result(train_loss, test_loss, train_acc, test_acc)
-    show_learning_curve(train_loss, test_loss, train_acc, test_acc)
-                
+    show_accuracy(train_acc, test_acc)
+    show_learning_curve(train_loss, test_loss)
+      
 if __name__ == '__main__':
     main()
