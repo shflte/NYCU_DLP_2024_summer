@@ -25,7 +25,7 @@ def train(epochs, learning_rate, optimizer, batch_size, mode, fine_tune=False):
 
     # optimizer
     if optimizer == "adam":
-        optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+        optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-4)
 
     # loss function
     criterion = nn.CrossEntropyLoss()
