@@ -50,8 +50,8 @@ class MIBCI2aDataset(torch.utils.data.Dataset):
         if mode == 'test':
             # subject dependent: ./dataset/SD_test/features/ and ./dataset/SD_test/labels/
             # leave-one-subject-out and finetune: ./dataset/LOSO_test/features/ and ./dataset/LOSO_test/labels/
-            self.features = self._getFeatures(filePath='./dataset/SD_test/features/')
-            self.labels = self._getLabels(filePath='./dataset/SD_test/labels/')
+            self.features = self._getFeatures(filePath='./dataset/LOSO_test/features/')
+            self.labels = self._getLabels(filePath='./dataset/LOSO_test/labels/')
 
     def __len__(self):
         # implement the len method

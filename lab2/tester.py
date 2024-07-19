@@ -11,8 +11,10 @@ def main():
     # parse args
     parser = ArgumentParser()
     parser.add_argument('-b', '--batch-size', type=int, default=64, help='batch size')
+    parser.add_argument('-m', '--mode', type=str, default='sd', help='sd, loso, loso + ft')
     args = parser.parse_args()
     batch_size = args.batch_size
+    mode = args.mode
 
     # dataset
     test_dataset = MIBCI2aDataset("test")
@@ -24,7 +26,8 @@ def main():
     C = features.shape[2]
     model = SCCNet(numClasses=4, timeSample=timeSample, Nu=22, C=C, Nc=44, Nt=1, dropoutRate=0.5)
     model = model.cuda()
-    model.load_state_dict(torch.load("model/trained/model.pth"))
+    model_name = mode + "_model.pth"
+    model.load_state_dict(torch.load(f"model/trained/{model_name}"))
 
     # loss function
     criterion = nn.CrossEntropyLoss()

@@ -1,6 +1,5 @@
 # implement SCCNet model
 
-import torch
 import torch.nn as nn
 
 # reference paper: https://ieeexplore.ieee.org/document/8716937
@@ -33,8 +32,8 @@ class SCCNet(nn.Module):
         self.fc = nn.Linear(Nc * (timeSample // 62), numClasses)
         self.dropout = nn.Dropout(dropoutRate)
         self.softmax = nn.Softmax(dim=1)
-        
-    
+
+
     def forward(self, x):
         x = self.firstConvBlock(x)
 
