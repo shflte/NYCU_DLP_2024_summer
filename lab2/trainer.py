@@ -6,7 +6,7 @@ from tqdm import tqdm
 from argparse import ArgumentParser
 
 from model.SCCNet import SCCNet
-from utils import show_accuracy, show_learning_curve, parse_args
+from utils import show_accuracy, show_learning_curve
 from Dataloader import MIBCI2aDataset
 
 
@@ -89,8 +89,11 @@ def main():
     torch.save(model.state_dict(), f"model/trained/model.pth")
 
     # show result
-    show_accuracy(train_acc, test_acc)
-    show_learning_curve(train_loss, test_loss)
+    show_accuracy(train_acc, "train")
+    show_learning_curve(train_loss, "train")
+
+    show_accuracy(test_acc, "test")
+    show_learning_curve(test_loss, "test")
 
 
 if __name__ == '__main__':
