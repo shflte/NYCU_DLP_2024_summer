@@ -56,22 +56,3 @@ class SCCNet(nn.Module):
 
     def get_size(self, C, N):
         pass
-
-
-# # 假設輸入數據有22個通道和1000個時間點
-C = 11  # Channels
-T = 1000  # Time points
-batch_size = 8  # 批次大小
-
-# # 創建隨機輸入數據
-dummy_input = torch.randn(batch_size, 1, C, T)
-
-# # 創建模型實例
-model = SCCNet(numClasses=4, timeSample=T, Nu=22, C=C, Nc=44, Nt=3, dropoutRate=0.5)
-print(model)
-
-# # 對輸入數據進行前向傳播
-output = model(dummy_input)
-
-# # 打印輸出形狀
-print(f'Output shape: {output.shape}')  # 應該是 (batch_size, numClasses)
