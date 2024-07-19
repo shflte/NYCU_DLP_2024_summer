@@ -13,9 +13,7 @@ from Dataloader import MIBCI2aDataset
 def train(epochs, learning_rate, optimizer, batch_size, mode, fine_tune=False):
     # dataset
     train_dataset = MIBCI2aDataset("train") if not fine_tune else MIBCI2aDataset("finetune")
-    test_dataset = MIBCI2aDataset("test")
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
     # model
     features, _ = next(iter(train_loader))
@@ -34,9 +32,7 @@ def train(epochs, learning_rate, optimizer, batch_size, mode, fine_tune=False):
 
     # training
     train_loss = []
-    test_loss = []
     train_acc = []
-    test_acc = []
 
     for epoch in tqdm(range(epochs)):
         model.train()
@@ -57,22 +53,6 @@ def train(epochs, learning_rate, optimizer, batch_size, mode, fine_tune=False):
         train_loss.append(loss.item())
         train_acc.append(correct / total)
 
-        model.eval()
-        correct = 0
-        total = 0
-        with torch.no_grad():
-            for features, labels in test_loader:
-                features, labels = features.cuda(), labels.cuda()
-                outputs = model(features)
-                loss = criterion(outputs, labels)
-
-                _, predicted = torch.max(outputs, 1)
-                total += labels.size(0)
-                correct += (predicted == labels).sum().item()
-
-        test_loss.append(loss.item())
-        test_acc.append(correct / total)
-
     # save model
     model_name = mode + "_model.pth"
     torch.save(model.state_dict(), f"model/trained/{model_name}")
@@ -80,9 +60,6 @@ def train(epochs, learning_rate, optimizer, batch_size, mode, fine_tune=False):
     # show result
     show_accuracy(train_acc, "train")
     show_learning_curve(train_loss, "train")
-
-    show_accuracy(test_acc, "test")
-    show_learning_curve(test_loss, "test")
 
 
 if __name__ == '__main__':
