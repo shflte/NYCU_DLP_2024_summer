@@ -15,9 +15,9 @@ class MIBCI2aDataset(torch.utils.data.Dataset):
                 data = np.load(os.path.join(filePath, file))
                 features.append(data)
         if features:
-            return np.concatenate(features, axis=0)
+            return np.concatenate(features, axis=0).astype(np.float32)
         else:
-            return np.array([])
+            return np.array([], dtype=np.float32)
 
     def _getLabels(self, filePath):
         # implement the getLabels method
@@ -31,9 +31,9 @@ class MIBCI2aDataset(torch.utils.data.Dataset):
                 data = np.load(os.path.join(filePath, file))
                 labels.append(data)
         if labels:
-            return np.concatenate(labels, axis=0)
+            return np.concatenate(labels, axis=0).astype(np.int64)
         else:
-            return np.array([])
+            return np.array([]).astype(np.int64)
 
     def __init__(self, mode):
         # remember to change the file path according to different experiments
@@ -59,4 +59,7 @@ class MIBCI2aDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
         # implement the getitem method
-        return self.features[idx], self.labels[idx]
+        feature = self.features[idx]
+        label = self.labels[idx]
+        feature = feature[np.newaxis, ...]
+        return feature, label
