@@ -78,6 +78,4 @@ if __name__ == '__main__':
     batch_size = args.batch_size
     mode = args.mode
 
-    train(epochs, learning_rate, optimizer, batch_size, mode)
-    if mode == 'loso_ft':
-        train(epochs, learning_rate, optimizer, batch_size, mode, fine_tune=True)
+    train(epochs, learning_rate, optimizer, batch_size, mode, fine_tune=(mode == "loso_ft"))
