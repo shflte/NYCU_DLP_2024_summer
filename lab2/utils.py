@@ -19,31 +19,26 @@ def parse_args():
     return epochs, learning_rate, optimizer, batch_size
 
 
-def show_result(epoch_data, train_acc, test_acc, model):
-    legends = []
-    plt.title(str('Accuracy for ' + model))
-    plt.xlabel('Epoches')
+def show_accuracy(train_acc, test_acc):
+    epochs = range(1, len(train_acc) + 1)
+
+    plt.plot(epochs, train_acc, 'b', label='Training accuracy')
+    plt.plot(epochs, test_acc, 'r', label='Test accuracy')
+    plt.title('Training and Test Accuracy')
+    plt.xlabel('Epochs')
     plt.ylabel('Accuracy')
-
-    plt.plot(epoch_data, train_acc)
-    legends.append('train')
-    plt.plot(epoch_data, test_acc)
-    legends.append('test')
-
-    plt.legend(legends)
+    plt.legend()
     plt.show()
 
 
-def show_learning_curve(epoch_data, train_loss, test_loss, model):
-    legends = []
-    plt.title(str('Learning Curve for ' + model))
-    plt.xlabel('Epoches')
+def show_learning_curve(train_loss, test_loss):
+    epochs = range(1, len(train_loss) + 1)
+
+    plt.figure(figsize=(8, 5))
+    plt.plot(epochs, train_loss, 'b', label='Training loss')
+    plt.plot(epochs, test_loss, 'r', label='Test loss')
+    plt.title('Training and Test Loss')
+    plt.xlabel('Epochs')
     plt.ylabel('Loss')
-
-    plt.plot(epoch_data, train_loss)
-    legends.append('train')
-    plt.plot(epoch_data, test_loss)
-    legends.append('test')
-
-    plt.legend(legends)
+    plt.legend()
     plt.show()
