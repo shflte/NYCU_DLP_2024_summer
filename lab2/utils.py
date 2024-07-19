@@ -29,6 +29,7 @@ def show_accuracy(train_acc, test_acc):
     plt.ylabel('Accuracy')
     plt.legend()
     plt.show()
+    plt.savefig('accuracy.png')
 
 
 def show_learning_curve(train_loss, test_loss):
@@ -42,3 +43,4 @@ def show_learning_curve(train_loss, test_loss):
     plt.ylabel('Loss')
     plt.legend()
     plt.show()
+    plt.savefig('loss.png')
