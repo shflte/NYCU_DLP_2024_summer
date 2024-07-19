@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from tqdm import tqdm
+from argparse import ArgumentParser
 
 from model.SCCNet import SCCNet
 from utils import show_accuracy, show_learning_curve, parse_args
@@ -10,7 +11,18 @@ from Dataloader import MIBCI2aDataset
 
 
 def main():
-    epochs, learning_rate, optimizer, batch_size = parse_args()
+    # parse args
+    parser = ArgumentParser()
+    parser.add_argument('-e', '--epochs', type=int, default=300, help='the number of epochs')
+    parser.add_argument('-l', '--learning_rate', type=float, default=0.001, help='learning rate')
+    parser.add_argument('-o', '--optimizer', type=str, default='adam', help='optimizer')
+    parser.add_argument('-b', '--batch-size', type=int, default=64, help='batch size')
+
+    args = parser.parse_args()
+    epochs = args.epochs
+    learning_rate = args.learning_rate
+    optimizer = args.optimizer
+    batch_size = args.batch_size
 
     # dataset
     train_dataset = MIBCI2aDataset("train")
@@ -79,6 +91,7 @@ def main():
     # show result
     show_accuracy(train_acc, test_acc)
     show_learning_curve(train_loss, test_loss)
-      
+
+
 if __name__ == '__main__':
     main()
