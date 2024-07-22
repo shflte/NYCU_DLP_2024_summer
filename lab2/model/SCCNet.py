@@ -29,14 +29,12 @@ class SCCNet(nn.Module):
         self.pool = nn.AvgPool2d((1, 62), stride=(1, 12))
 
         self.flatten = nn.Flatten()
-        self.fc = nn.Linear(Nc * ((timeSample - (62 - 12)) // 12), numClasses)
         self.dropout = nn.Dropout(dropoutRate)
-        # self.softmax = nn.Softmax(dim=1)
+        self.fc = nn.Linear(Nc * ((timeSample - (62 - 12)) // 12), numClasses)
 
 
     def forward(self, x):
         x = self.firstConvBlock(x)
-        # Permute dimensions
         x = x.permute(0, 2, 1, 3)
 
         x = self.secondConvBlock(x)
@@ -46,10 +44,8 @@ class SCCNet(nn.Module):
         x = self.pool(x)
 
         x = self.flatten(x)
-        x = self.fc(x)
         x = self.dropout(x)
-        # x = self.softmax(x)
-        # breakpoint()
+        x = self.fc(x)
 
         return x
 

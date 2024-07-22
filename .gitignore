@@ -3,6 +3,5 @@ __pycache__/
 venv/
 requirements.txt
 trained/
-permanent/
 *.png
 *.jpg
