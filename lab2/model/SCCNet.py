@@ -11,7 +11,7 @@ class SquareLayer(nn.Module):
         return x ** 2
 
 class SCCNet(nn.Module):
-    def __init__(self, numClasses=4, timeSample=1000, Nu=22, C=22, Nc=44, Nt=1, dropoutRate=0.5):
+    def __init__(self, numClasses=4, timeSample=438, Nu=22, C=22, Nc=22, Nt=1, dropoutRate=0.5):
         super(SCCNet, self).__init__()
 
         self.firstConvBlock = nn.Sequential(
@@ -26,17 +26,16 @@ class SCCNet(nn.Module):
 
         self.squareLayer = SquareLayer()
 
-        self.pool = nn.AvgPool2d((1, 62))
+        self.pool = nn.AvgPool2d((1, 62), stride=(1, 12))
 
         self.flatten = nn.Flatten()
-        self.fc = nn.Linear(Nc * (timeSample // 62), numClasses)
+        self.fc = nn.Linear(Nc * ((timeSample - (62 - 12)) // 12), numClasses)
         self.dropout = nn.Dropout(dropoutRate)
-        self.softmax = nn.Softmax(dim=1)
+        # self.softmax = nn.Softmax(dim=1)
 
 
     def forward(self, x):
         x = self.firstConvBlock(x)
-
         # Permute dimensions
         x = x.permute(0, 2, 1, 3)
 
@@ -49,7 +48,8 @@ class SCCNet(nn.Module):
         x = self.flatten(x)
         x = self.fc(x)
         x = self.dropout(x)
-        x = self.softmax(x)
+        # x = self.softmax(x)
+        # breakpoint()
 
         return x
 

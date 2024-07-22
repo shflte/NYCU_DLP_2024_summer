@@ -21,11 +21,7 @@ def main():
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
     # model
-    features, _ = next(iter(test_loader))
-    timeSample = features.shape[3]
-    C = features.shape[2]
-    model = SCCNet(numClasses=4, timeSample=timeSample, Nu=22, C=C, Nc=44, Nt=1, dropoutRate=0.5)
-    model = model.cuda()
+    model = SCCNet().cuda()
     model_name = mode + "_model.pth"
     model.load_state_dict(torch.load(f"model/trained/{model_name}"))
 
