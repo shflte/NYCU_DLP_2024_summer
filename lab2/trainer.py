@@ -10,7 +10,7 @@ from utils import show_accuracy, show_learning_curve
 from Dataloader import MIBCI2aDataset
 
 
-def train(epochs, learning_rate, optimizer, batch_size, mode, fine_tune=False):
+def train(epochs, learning_rate, batch_size, mode, fine_tune=False):
     # dataset
     train_dataset = MIBCI2aDataset("train") if not fine_tune else MIBCI2aDataset("finetune")
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
@@ -23,8 +23,7 @@ def train(epochs, learning_rate, optimizer, batch_size, mode, fine_tune=False):
         model.load_state_dict(torch.load("model/trained/loso_model.pth"))
 
     # optimizer
-    if optimizer == "adam":
-        optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-4)
+    optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-4)
 
     # loss function
     criterion = nn.CrossEntropyLoss()
@@ -55,6 +54,7 @@ def train(epochs, learning_rate, optimizer, batch_size, mode, fine_tune=False):
         train_loss.append(loss.item())
         train_acc.append(correct / total)
 
+        model.eval()
         if epoch % 100 == 0:
             val_correct = 0
             val_total = 0
@@ -88,15 +88,13 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('-e', '--epochs', type=int, default=300, help='the number of epochs')
     parser.add_argument('-l', '--learning_rate', type=float, default=0.001, help='learning rate')
-    parser.add_argument('-o', '--optimizer', type=str, default='adam', help='optimizer')
     parser.add_argument('-b', '--batch-size', type=int, default=64, help='batch size')
     parser.add_argument('-m', '--mode', type=str, default='sd', help='sd, loso, loso + ft')
 
     args = parser.parse_args()
     epochs = args.epochs
     learning_rate = args.learning_rate
-    optimizer = args.optimizer
     batch_size = args.batch_size
     mode = args.mode
 
-    train(epochs, learning_rate, optimizer, batch_size, mode, fine_tune=(mode == "loso_ft"))
+    train(epochs, learning_rate, batch_size, mode, fine_tune=(mode == "loso_ft"))
