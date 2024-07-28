@@ -1,7 +1,6 @@
 __pycache__/
 .DS_Store
 venv/
-requirements.txt
 trained/
 *.png
 *.jpg
