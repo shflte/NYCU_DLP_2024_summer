@@ -2,10 +2,11 @@ import os
 import torch
 import shutil
 import numpy as np
-
 from PIL import Image
 from tqdm import tqdm
 from urllib.request import urlretrieve
+import torchvision.transforms as transforms
+
 
 class OxfordPetDataset(torch.utils.data.Dataset):
     def __init__(self, root, mode="train", transform=None):
@@ -25,19 +26,15 @@ class OxfordPetDataset(torch.utils.data.Dataset):
         return len(self.filenames)
 
     def __getitem__(self, idx):
-
         filename = self.filenames[idx]
         image_path = os.path.join(self.images_directory, filename + ".jpg")
         mask_path = os.path.join(self.masks_directory, filename + ".png")
 
         image = np.array(Image.open(image_path).convert("RGB"))
-
         trimap = np.array(Image.open(mask_path))
         mask = self._preprocess_mask(trimap)
 
-        sample = dict(image=image, mask=mask, trimap=trimap)
-        if self.transform is not None:
-            sample = self.transform(**sample)
+        sample = self.transform(image, mask, trimap)
 
         return sample
 
@@ -80,24 +77,6 @@ class OxfordPetDataset(torch.utils.data.Dataset):
         extract_archive(filepath)
 
 
-class SimpleOxfordPetDataset(OxfordPetDataset):
-    def __getitem__(self, *args, **kwargs):
-
-        sample = super().__getitem__(*args, **kwargs)
-
-        # resize images
-        image = np.array(Image.fromarray(sample["image"]).resize((256, 256), Image.BILINEAR))
-        mask = np.array(Image.fromarray(sample["mask"]).resize((256, 256), Image.NEAREST))
-        trimap = np.array(Image.fromarray(sample["trimap"]).resize((256, 256), Image.NEAREST))
-
-        # convert to other format HWC -> CHW
-        sample["image"] = np.moveaxis(image, -1, 0)
-        sample["mask"] = np.expand_dims(mask, 0)
-        sample["trimap"] = np.expand_dims(trimap, 0)
-
-        return sample
-
-
 class TqdmUpTo(tqdm):
     def update_to(self, b=1, bsize=1, tsize=None):
         if tsize is not None:
@@ -128,7 +107,35 @@ def extract_archive(filepath):
     if not os.path.exists(dst_dir):
         shutil.unpack_archive(filepath, extract_dir)
 
-def load_dataset(data_path, mode):
-    # implement the load dataset function here
 
-    assert False, "Not implemented yet!"
+def nice_transform(image, mask, trimap):
+    transform = transforms.Compose([
+        transforms.ToPILImage(),
+        transforms.Resize((256, 256), interpolation=Image.BILINEAR),
+        # transforms.RandomHorizontalFlip(),
+        # transforms.RandomRotation(15),
+        transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    ])
+
+    image = transform(image)
+    mask = np.array(Image.fromarray(mask).resize((256, 256), Image.NEAREST))
+    trimap = np.array(Image.fromarray(trimap).resize((256, 256), Image.NEAREST))
+
+    mask = torch.from_numpy(np.expand_dims(mask, 0))
+    trimap = torch.from_numpy(np.expand_dims(trimap, 0))
+
+    return dict(image=image, mask=mask, trimap=trimap)
+
+
+def load_dataset(data_path, mode):
+    images_dir = os.path.join(data_path, "images")
+    annotations_dir = os.path.join(data_path, "annotations")
+
+    if not os.path.exists(images_dir) or not os.path.exists(annotations_dir):
+        OxfordPetDataset.download(data_path)
+
+    dataset = OxfordPetDataset(root=data_path, mode=mode, transform=nice_transform)
+
+    return dataset
