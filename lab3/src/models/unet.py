@@ -26,32 +26,27 @@ class EncodingBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
         self.double_conv = DoubleConvBlock(in_channels, out_channels)
-        # self.dropout = nn.Dropout()
 
     def forward(self, x):
         x = self.double_conv(x)
-        # x = self.dropout(x)
 
         return x
 
 
 class DecodingBlock(nn.Module):
-    def __init__(self, in_channels, out_channels):
+    def __init__(self, skipped_in_channels, upper_in_channels, out_channels, scale_factor=2):
         super().__init__()
 
         self.upsample = nn.Sequential(
-            nn.Upsample(mode="bilinear", scale_factor=2),
-            nn.Conv2d(in_channels, out_channels, kernel_size=1),
+            nn.Upsample(mode="bilinear", scale_factor=scale_factor),
+            nn.Conv2d(upper_in_channels, out_channels, kernel_size=1),
         )
 
-        self.conv = DoubleConvBlock(in_channels, out_channels)
+        self.conv = DoubleConvBlock(skipped_in_channels + upper_in_channels // 2, out_channels)
 
     def forward(self, skipped_input, upper_input):
         upper_output = self.upsample(upper_input)
-        upsampled_shape = upper_output.size()[2:]
-        skipped_output = nn.functional.interpolate(skipped_input, upsampled_shape, mode="bilinear")  # copy & crop
-        concat = torch.cat([skipped_output, upper_output], 1)
-
+        concat = torch.cat([skipped_input, upper_output], 1)
         return self.conv(concat)
 
 
@@ -76,10 +71,10 @@ class UNet(nn.Module):
         self.bottleneck = EncodingBlock(512, 1024)
 
         # decoding
-        self.decode4 = DecodingBlock(1024, 512)
-        self.decode3 = DecodingBlock(512, 256)
-        self.decode2 = DecodingBlock(256, 128)
-        self.decode1 = DecodingBlock(128, 64)
+        self.decode1 = DecodingBlock(512, 1024, 512)
+        self.decode2 = DecodingBlock(256, 512, 256)
+        self.decode3 = DecodingBlock(128, 256, 128)
+        self.decode4 = DecodingBlock(64, 128, 64)
 
         self.final = nn.Conv2d(64, 1, kernel_size=1)
 
@@ -98,12 +93,12 @@ class UNet(nn.Module):
         bottleneck = self.bottleneck(maxpool4)
 
         # decoding
-        decode4 = self.decode4(conv4, bottleneck)
-        decode3 = self.decode3(conv3, decode4)
-        decode2 = self.decode2(conv2, decode3)
-        decode1 = self.decode1(conv1, decode2)
+        decode1 = self.decode1(conv4, bottleneck)
+        decode2 = self.decode2(conv3, decode1)
+        decode3 = self.decode3(conv2, decode2)
+        decode4 = self.decode4(conv1, decode3)
 
-        final = self.final(decode1)
+        final = self.final(decode4)
         output = torch.sigmoid(final)
 
         return output
