@@ -21,7 +21,7 @@ def inference(args):
         raise ValueError("Model not supported")
     model = model.cuda()
     # load the model weights
-    model.load_state_dict(torch.load(args.model, weights_only=True))
+    model.load_state_dict(torch.load(f"{args.model_path}/{args.model_type}.pth", weights_only=True))
 
     # test
     model.eval()
@@ -46,12 +46,13 @@ def inference(args):
 
 def get_args():
     parser = argparse.ArgumentParser(description='Predict masks from input images')
-    parser.add_argument('--model_path', '-mp', default='../saved_models/unet.pth', help='path to the stored model weight')
+    parser.add_argument('--model_path', '-m', default='../saved_models', help='path to the stored model weight')
     parser.add_argument('--model_type', '-t', default='unet', help='model type')
     parser.add_argument('--data_path', '-p', type=str, default='../dataset/oxford-iiit-pet', help='path to the input data')
     parser.add_argument('--batch_size', '-b', type=int, default=1, help='batch size')
-    
+
     return parser.parse_args()
+
 
 if __name__ == '__main__':
     args = get_args()

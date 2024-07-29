@@ -17,9 +17,9 @@ def train(args):
     val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False)
 
     # model
-    if args.model == "unet":
+    if args.model_type == "unet":
         model = UNet()
-    elif args.model == "resnet34_unet":
+    elif args.model_type == "resnet34_unet":
         model = ResNet34_UNet()
     else:
         raise ValueError("Model not supported")
@@ -68,7 +68,7 @@ def train(args):
         val_acc.append(val_acc_epoch)
 
     # save model
-    torch.save(model.state_dict(), f"{args.model}_model.pth")
+    torch.save(model.state_dict(), f"{args.model_path}/{args.model}.pth")
 
     # show results
     show_accuracy(train_acc, args.model + "_train")
@@ -80,15 +80,16 @@ def train(args):
 
 def get_args():
     parser = argparse.ArgumentParser(description='Train the UNet on images and target masks')
+    parser.add_argument('--model_path', '-m', type=str, default='../saved_models', help='path to save the model')
+    parser.add_argument('--model_type', '-t', type=str, default='unet', help='model to use (unet, resnet34_unet)')
     parser.add_argument('--data_path', '-p', default='../dataset/oxford-iiit-pet', type=str, help='path of the input data')
     parser.add_argument('--epochs', '-e', type=int, default=10, help='number of epochs')
     parser.add_argument('--batch_size', '-b', type=int, default=32, help='batch size')
     parser.add_argument('--learning-rate', '-lr', type=float, default=1e-5, help='learning rate')
-    parser.add_argument('--model', '-m', type=str, default='unet', help='model to use (unet, resnet34_unet)')
-    parser.add_argument('--model_path', '-mp', type=str, default='../saved_models', help='path to save the model')
 
     return parser.parse_args()
- 
+
+
 if __name__ == "__main__":
     args = get_args()
     train(args)
