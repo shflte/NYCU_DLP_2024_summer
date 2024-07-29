@@ -1,6 +1,34 @@
 import numpy as np
+import matplotlib.pyplot as plt
+
+
+def show_accuracy(acc, fileName):
+    plt.figure()
+    epochs = range(1, len(acc) + 1)
+
+    plt.plot(epochs, acc, 'b', label='Accuracy')
+    plt.title('Accuracy')
+    plt.xlabel('Epochs')
+    plt.ylabel('Accuracy')
+    plt.legend()
+    plt.show()
+    plt.savefig(f'{fileName}_accuracy.png')
+
+
+def show_learning_curve(loss, fileName):
+    plt.figure()
+    epochs = range(1, len(loss) + 1)
+
+    plt.plot(epochs, loss, 'b', label='Loss')
+    plt.title('Loss')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.show()
+    plt.savefig(f'{fileName}_loss.png')
+
 
 def dice_score(pred_mask, gt_mask):
-    assert pred_mask.shape == gt_mask.shape
-    logical_xnor = np.logical_not(np.logical_xor(pred_mask, gt_mask))
-    return 2 * (logical_xnor.sum()) / (pred_mask.size + gt_mask.size)
+    intersection = np.sum(pred_mask * gt_mask)
+    union = np.sum(pred_mask) + np.sum(gt_mask)
+    return 2 * intersection / union
