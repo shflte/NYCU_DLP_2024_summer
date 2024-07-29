@@ -3,16 +3,16 @@ import torch
 
 
 class DoubleConvBlock(nn.Module):
-    def __init__(self, in_channel, out_channel, kernel_size=3, padding=1):
+    def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=1):
         super().__init__()
         self.conv1 = nn.Sequential(
-            nn.Conv2d(in_channel, out_channel, kernel_size=kernel_size, padding=padding),
-            nn.BatchNorm2d(out_channel),
+            nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, padding=padding),
+            nn.BatchNorm2d(out_channels),
             nn.ReLU()
         )
         self.conv2 = nn.Sequential(
-            nn.Conv2d(out_channel, out_channel, kernel_size=kernel_size, padding=padding),
-            nn.BatchNorm2d(out_channel),
+            nn.Conv2d(out_channels, out_channels, kernel_size=kernel_size, stride=1, padding=padding),
+            nn.BatchNorm2d(out_channels),
             nn.ReLU()
         )
 
@@ -23,28 +23,28 @@ class DoubleConvBlock(nn.Module):
 
 
 class EncodingBlock(nn.Module):
-    def __init__(self, in_channel, out_channel):
+    def __init__(self, in_channels, out_channels):
         super().__init__()
-        self.double_conv = DoubleConvBlock(in_channel, out_channel)
-        self.dropout = nn.Dropout()
+        self.double_conv = DoubleConvBlock(in_channels, out_channels)
+        # self.dropout = nn.Dropout()
 
     def forward(self, x):
         x = self.double_conv(x)
-        x = self.dropout(x)
+        # x = self.dropout(x)
 
         return x
 
 
 class DecodingBlock(nn.Module):
-    def __init__(self, in_channel, out_channel):
+    def __init__(self, in_channels, out_channels):
         super().__init__()
 
         self.upsample = nn.Sequential(
             nn.Upsample(mode="bilinear", scale_factor=2),
-            nn.Conv2d(in_channel, out_channel, kernel_size=1),
+            nn.Conv2d(in_channels, out_channels, kernel_size=1),
         )
 
-        self.conv = DoubleConvBlock(in_channel, out_channel)
+        self.conv = DoubleConvBlock(in_channels, out_channels)
 
     def forward(self, skipped_input, upper_input):
         upper_output = self.upsample(upper_input)
