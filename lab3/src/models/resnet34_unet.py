@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from unet import DoubleConvBlock, EncodingBlock, DecodingBlock
+from .unet import DoubleConvBlock, EncodingBlock, DecodingBlock
 
 
 class ResidualConvBlock(nn.Module):
