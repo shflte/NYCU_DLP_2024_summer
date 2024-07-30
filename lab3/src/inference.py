@@ -3,7 +3,7 @@ import argparse
 from torch.utils.data import DataLoader
 from models.unet import UNet
 from models.resnet34_unet import ResNet34_UNet
-from utils import dice_score
+from utils import dice_score, show_image
 from oxford_pet import load_dataset
 
 
@@ -28,7 +28,8 @@ def inference(args):
     with torch.no_grad():
         epoch_test_acc = 0
         test_batches = 0
-        for batch in test_loader:
+        # for batch in test_loader:
+        for i, batch in enumerate(test_loader):
             image = batch['image'].cuda()
             mask = batch['mask'].cuda()
             output = model(image)
@@ -40,6 +41,14 @@ def inference(args):
             acc = dice_score(pred, mask)
             epoch_test_acc += acc
             test_batches += 1
+
+            # show the image, mask, and prediction for every 100th image
+            if i % 100 == 0:
+                image = image.detach().cpu().numpy()
+                image = image[0].transpose(1, 2, 0)
+                pred = pred[0][0]
+                mask = mask[0][0]
+                show_image(image, pred, mask, i)
 
     print(f"Test Dice Score: {epoch_test_acc / test_batches}")
 

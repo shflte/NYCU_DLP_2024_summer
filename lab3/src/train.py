@@ -68,14 +68,14 @@ def train(args):
         val_acc.append(val_acc_epoch)
 
     # save model
-    torch.save(model.state_dict(), f"{args.model_path}/{args.model}.pth")
+    torch.save(model.state_dict(), f"{args.model_path}/{args.model_type}.pth")
 
     # show results
-    show_accuracy(train_acc, args.model + "_train")
-    show_learning_curve(train_loss, args.model + "_train")
+    show_accuracy(train_acc, args.model_type + "_train")
+    show_learning_curve(train_loss, args.model_type + "_train")
 
-    show_accuracy(val_acc, args.model + "_val")
-    show_learning_curve(val_loss, args.model + "_val")
+    show_accuracy(val_acc, args.model_type + "_val")
+    show_learning_curve(val_loss, args.model_type + "_val")
 
 
 def get_args():
