@@ -4,3 +4,4 @@ venv/
 trained/
 *.png
 *.jpg
+dataset/
