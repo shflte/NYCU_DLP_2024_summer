@@ -5,3 +5,5 @@ trained/
 *.png
 *.jpg
 dataset/
+*.zip
+*.pth
