@@ -6,14 +6,26 @@ class DoubleConvBlock(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=1):
         super().__init__()
         self.conv1 = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, padding=padding),
+            nn.Conv2d(
+                in_channels,
+                out_channels,
+                kernel_size=kernel_size,
+                stride=stride,
+                padding=padding,
+            ),
             nn.BatchNorm2d(out_channels),
-            nn.ReLU()
+            nn.ReLU(),
         )
         self.conv2 = nn.Sequential(
-            nn.Conv2d(out_channels, out_channels, kernel_size=kernel_size, stride=1, padding=padding),
+            nn.Conv2d(
+                out_channels,
+                out_channels,
+                kernel_size=kernel_size,
+                stride=1,
+                padding=padding,
+            ),
             nn.BatchNorm2d(out_channels),
-            nn.ReLU()
+            nn.ReLU(),
         )
 
     def forward(self, x):
@@ -34,7 +46,9 @@ class EncodingBlock(nn.Module):
 
 
 class DecodingBlock(nn.Module):
-    def __init__(self, skipped_in_channels, upper_in_channels, out_channels, scale_factor=2):
+    def __init__(
+        self, skipped_in_channels, upper_in_channels, out_channels, scale_factor=2
+    ):
         super().__init__()
 
         self.upsample = nn.Sequential(
@@ -42,7 +56,9 @@ class DecodingBlock(nn.Module):
             nn.Conv2d(upper_in_channels, out_channels, kernel_size=1),
         )
 
-        self.conv = DoubleConvBlock(skipped_in_channels + upper_in_channels // 2, out_channels)
+        self.conv = DoubleConvBlock(
+            skipped_in_channels + upper_in_channels // 2, out_channels
+        )
 
     def forward(self, skipped_input, upper_input):
         upper_output = self.upsample(upper_input)

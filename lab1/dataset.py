@@ -1,5 +1,6 @@
-def generate_linear(n=100): 
+def generate_linear(n=100):
     import numpy as np
+
     pts = np.random.uniform(0, 1, (n, 2))
     inputs = []
     labels = []
@@ -13,8 +14,10 @@ def generate_linear(n=100):
 
     return np.array(inputs), np.array(labels).reshape(n, 1)
 
+
 def generate_XOR_easy():
     import numpy as np
+
     inputs = []
     labels = []
     for i in range(11):

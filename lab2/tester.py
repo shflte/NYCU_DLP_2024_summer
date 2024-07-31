@@ -10,8 +10,10 @@ from Dataloader import MIBCI2aDataset
 def main():
     # parse args
     parser = ArgumentParser()
-    parser.add_argument('-b', '--batch-size', type=int, default=64, help='batch size')
-    parser.add_argument('-m', '--mode', type=str, default='sd', help='sd, loso, loso + ft')
+    parser.add_argument("-b", "--batch-size", type=int, default=64, help="batch size")
+    parser.add_argument(
+        "-m", "--mode", type=str, default="sd", help="sd, loso, loso + ft"
+    )
     args = parser.parse_args()
     batch_size = args.batch_size
     mode = args.mode
@@ -45,5 +47,5 @@ def main():
     print(f"Accuracy: {correct / total * 100:.2f}%")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

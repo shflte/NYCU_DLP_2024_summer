@@ -1,6 +1,7 @@
 import torch
 from utils import dice_score
 
+
 def evaluate(net, data, criterion, device):
     # validation
     net.eval()
@@ -9,8 +10,8 @@ def evaluate(net, data, criterion, device):
     val_batches = 0
     with torch.no_grad():
         for batch in data:
-            image = batch['image'].cuda()
-            mask = batch['mask'].cuda()
+            image = batch["image"].cuda()
+            mask = batch["mask"].cuda()
             output = net(image)
             loss = criterion(output, mask)
 

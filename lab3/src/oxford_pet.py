@@ -109,15 +109,19 @@ def extract_archive(filepath):
 
 
 def nice_transform(image, mask, trimap):
-    transform = transforms.Compose([
-        transforms.ToPILImage(),
-        transforms.Resize((256, 256), interpolation=Image.BILINEAR),
-        # transforms.RandomHorizontalFlip(),
-        # transforms.RandomRotation(15),
-        transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-    ])
+    transform = transforms.Compose(
+        [
+            transforms.ToPILImage(),
+            transforms.Resize((256, 256), interpolation=Image.BILINEAR),
+            # transforms.RandomHorizontalFlip(),
+            # transforms.RandomRotation(15),
+            transforms.ColorJitter(
+                brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1
+            ),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ]
+    )
 
     image = transform(image)
     mask = np.array(Image.fromarray(mask).resize((256, 256), Image.NEAREST))

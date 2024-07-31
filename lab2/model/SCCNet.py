@@ -2,16 +2,20 @@
 
 import torch.nn as nn
 
+
 # reference paper: https://ieeexplore.ieee.org/document/8716937
 class SquareLayer(nn.Module):
     def __init__(self):
         super(SquareLayer, self).__init__()
 
     def forward(self, x):
-        return x ** 2
+        return x**2
+
 
 class SCCNet(nn.Module):
-    def __init__(self, numClasses=4, timeSample=438, Nu=22, C=22, Nc=22, Nt=1, dropoutRate=0.5):
+    def __init__(
+        self, numClasses=4, timeSample=438, Nu=22, C=22, Nc=22, Nt=1, dropoutRate=0.5
+    ):
         super(SCCNet, self).__init__()
 
         self.firstConvBlock = nn.Sequential(
@@ -31,7 +35,6 @@ class SCCNet(nn.Module):
         self.flatten = nn.Flatten()
         self.dropout = nn.Dropout(dropoutRate)
         self.fc = nn.Linear(Nc * ((timeSample - (62 - 12)) // 12), numClasses)
-
 
     def forward(self, x):
         x = self.firstConvBlock(x)

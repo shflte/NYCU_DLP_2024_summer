@@ -6,9 +6,13 @@ from .unet import DoubleConvBlock, EncodingBlock, DecodingBlock
 class ResidualConvBlock(nn.Module):
     def __init__(self, in_channels, out_channels, stride=1, padding=1):
         super().__init__()
-        self.double_conv = DoubleConvBlock(in_channels, out_channels, stride=stride, padding=padding)
+        self.double_conv = DoubleConvBlock(
+            in_channels, out_channels, stride=stride, padding=padding
+        )
         self.skip_connect = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride, padding=0),
+            nn.Conv2d(
+                in_channels, out_channels, kernel_size=1, stride=stride, padding=0
+            ),
             nn.BatchNorm2d(out_channels),
         )
 

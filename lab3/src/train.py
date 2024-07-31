@@ -43,8 +43,8 @@ def train(args):
         train_batches = 0
         for batch in train_loader:
             optimizer.zero_grad()
-            image = batch['image'].cuda()
-            mask = batch['mask'].cuda()
+            image = batch["image"].cuda()
+            mask = batch["mask"].cuda()
             output = model(image)
             loss = criterion(output, mask)
             loss.backward()
@@ -63,7 +63,9 @@ def train(args):
         train_acc.append(epoch_train_acc / train_batches)
 
         # validation
-        val_loss_epoch, val_acc_epoch = evaluate(model, val_loader, criterion, device="cuda")
+        val_loss_epoch, val_acc_epoch = evaluate(
+            model, val_loader, criterion, device="cuda"
+        )
         val_loss.append(val_loss_epoch)
         val_acc.append(val_acc_epoch)
 
@@ -79,13 +81,35 @@ def train(args):
 
 
 def get_args():
-    parser = argparse.ArgumentParser(description='Train the UNet on images and target masks')
-    parser.add_argument('--model_path', '-m', type=str, default='../saved_models', help='path to save the model')
-    parser.add_argument('--model_type', '-t', type=str, default='unet', help='model to use (unet, resnet34_unet)')
-    parser.add_argument('--data_path', '-p', default='../dataset/oxford-iiit-pet', type=str, help='path of the input data')
-    parser.add_argument('--epochs', '-e', type=int, default=10, help='number of epochs')
-    parser.add_argument('--batch_size', '-b', type=int, default=32, help='batch size')
-    parser.add_argument('--learning-rate', '-lr', type=float, default=1e-5, help='learning rate')
+    parser = argparse.ArgumentParser(
+        description="Train the UNet on images and target masks"
+    )
+    parser.add_argument(
+        "--model_path",
+        "-m",
+        type=str,
+        default="../saved_models",
+        help="path to save the model",
+    )
+    parser.add_argument(
+        "--model_type",
+        "-t",
+        type=str,
+        default="unet",
+        help="model to use (unet, resnet34_unet)",
+    )
+    parser.add_argument(
+        "--data_path",
+        "-p",
+        default="../dataset/oxford-iiit-pet",
+        type=str,
+        help="path of the input data",
+    )
+    parser.add_argument("--epochs", "-e", type=int, default=10, help="number of epochs")
+    parser.add_argument("--batch_size", "-b", type=int, default=32, help="batch size")
+    parser.add_argument(
+        "--learning-rate", "-lr", type=float, default=1e-5, help="learning rate"
+    )
 
     return parser.parse_args()
 

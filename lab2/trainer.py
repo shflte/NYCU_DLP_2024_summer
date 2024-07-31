@@ -12,7 +12,9 @@ from Dataloader import MIBCI2aDataset
 
 def train(epochs, learning_rate, batch_size, mode, fine_tune=False):
     # dataset
-    train_dataset = MIBCI2aDataset("train") if not fine_tune else MIBCI2aDataset("finetune")
+    train_dataset = (
+        MIBCI2aDataset("train") if not fine_tune else MIBCI2aDataset("finetune")
+    )
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     test_dataset = MIBCI2aDataset("test")
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
@@ -50,7 +52,6 @@ def train(epochs, learning_rate, batch_size, mode, fine_tune=False):
             total += batch_size
             correct += (predicted == labels).sum().item()
 
-
         train_loss.append(loss.item())
         train_acc.append(correct / total)
 
@@ -83,13 +84,19 @@ def train(epochs, learning_rate, batch_size, mode, fine_tune=False):
     show_learning_curve(val_loss, "val")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # parse args
     parser = ArgumentParser()
-    parser.add_argument('-e', '--epochs', type=int, default=300, help='the number of epochs')
-    parser.add_argument('-l', '--learning_rate', type=float, default=0.001, help='learning rate')
-    parser.add_argument('-b', '--batch-size', type=int, default=64, help='batch size')
-    parser.add_argument('-m', '--mode', type=str, default='sd', help='sd, loso, loso + ft')
+    parser.add_argument(
+        "-e", "--epochs", type=int, default=300, help="the number of epochs"
+    )
+    parser.add_argument(
+        "-l", "--learning_rate", type=float, default=0.001, help="learning rate"
+    )
+    parser.add_argument("-b", "--batch-size", type=int, default=64, help="batch size")
+    parser.add_argument(
+        "-m", "--mode", type=str, default="sd", help="sd, loso, loso + ft"
+    )
 
     args = parser.parse_args()
     epochs = args.epochs
