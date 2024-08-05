@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import os
 
 
 def dice_score(pred_mask, gt_mask):
@@ -52,4 +53,7 @@ def show_image(image, pred_mask, gt_mask, name):
     plt.title("Ground Truth")
     plt.axis("off")
 
-    plt.savefig(f"../predictions/{name}.png")
+    predictions_folder = "../predictions"
+    if not os.path.exists(predictions_folder):
+        os.makedirs(predictions_folder)
+    plt.saving(f"{predictions_folder}/{name}.png")
