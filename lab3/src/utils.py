@@ -56,4 +56,4 @@ def show_image(image, pred_mask, gt_mask, name):
     predictions_folder = "../predictions"
     if not os.path.exists(predictions_folder):
         os.makedirs(predictions_folder)
-    plt.saving(f"{predictions_folder}/{name}.png")
+    plt.savefig(f"{predictions_folder}/{name}.png")
