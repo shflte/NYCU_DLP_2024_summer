@@ -42,20 +42,35 @@ def kl_criterion(mu, logvar, batch_size):
 
 class kl_annealing:
     def __init__(self, args, current_epoch=0):
-        # TODO
-        raise NotImplementedError
+        self.kl_anneal_type = args.kl_anneal_type
+        self.kl_anneal_cycle = args.kl_anneal_cycle
+        self.kl_anneal_ratio = args.kl_anneal_ratio
+        self.current_epoch = current_epoch
+        self.beta = 0.0
 
     def update(self):
-        # TODO
-        raise NotImplementedError
+        if self.kl_anneal_type == "Cyclical":
+            self.beta = self.frange_cycle_linear(
+                self.current_epoch,
+                n_iter=self.kl_anneal_cycle,
+                ratio=self.kl_anneal_ratio,
+            )
+        elif self.kl_anneal_type == "Monotonic":
+            self.beta = min(1.0, self.current_epoch / self.kl_anneal_cycle)
+        else:
+            self.beta = 1.0  # Without KL annealing
 
     def get_beta(self):
-        # TODO
-        raise NotImplementedError
+        return self.beta
 
     def frange_cycle_linear(self, n_iter, start=0.0, stop=1.0, n_cycle=1, ratio=1):
-        # TODO
-        raise NotImplementedError
+        L = np.linspace(start, stop, num=int(n_iter * ratio))
+        beta = []
+        for _ in range(n_cycle):
+            beta.extend(L)
+            beta.extend(L[::-1])
+        beta = np.array(beta)
+        return beta[min(self.current_epoch, len(beta) - 1)]
 
 
 class VAE_Model(nn.Module):
@@ -90,10 +105,13 @@ class VAE_Model(nn.Module):
         self.tfr = args.tfr
         self.tfr_d_step = args.tfr_d_step
         self.tfr_sde = args.tfr_sde
+        self.tfr_min = args.tfr_min
 
         self.train_vi_len = args.train_vi_len
         self.val_vi_len = args.val_vi_len
         self.batch_size = args.batch_size
+
+        self.last_pred = None
 
     def forward(self, img, label):
         pass
@@ -109,24 +127,15 @@ class VAE_Model(nn.Module):
                 loss = self.training_one_step(img, label, adapt_TeacherForcing)
 
                 beta = self.kl_annealing.get_beta()
-                if adapt_TeacherForcing:
-                    self.tqdm_bar(
-                        "train [TeacherForcing: ON, {:.1f}], beta: {}".format(
-                            self.tfr, beta
-                        ),
-                        pbar,
-                        loss.detach().cpu(),
-                        lr=self.scheduler.get_last_lr()[0],
-                    )
-                else:
-                    self.tqdm_bar(
-                        "train [TeacherForcing: OFF, {:.1f}], beta: {}".format(
-                            self.tfr, beta
-                        ),
-                        pbar,
-                        loss.detach().cpu(),
-                        lr=self.scheduler.get_last_lr()[0],
-                    )
+                teacher_forcing_status = "ON" if adapt_TeacherForcing else "OFF"
+                self.tqdm_bar(
+                    "train [TeacherForcing: {}, {:.1f}], beta: {}".format(
+                        teacher_forcing_status, self.tfr, beta
+                    ),
+                    pbar,
+                    loss.detach().cpu(),
+                    lr=self.scheduler.get_last_lr()[0],
+                )
 
             if self.current_epoch % self.args.per_save == 0:
                 self.save(
@@ -153,12 +162,38 @@ class VAE_Model(nn.Module):
             )
 
     def training_one_step(self, img, label, adapt_TeacherForcing):
-        # TODO
-        raise NotImplementedError
+        B, T, C, H, W = img.shape
+        if adapt_TeacherForcing and self.last_pred is not None:
+            img = self.last_pred
+
+        feature = torch.cat([img, label], dim=1)
+        mu, logvar = self.Gaussian_Predictor(feature)
+
+        noise = self.Gaussian_Predictor.reparameterize(mu, logvar)
+        feature = torch.cat([img, label, noise], dim=1)
+        output = self.Decoder_Fusion(feature)
+        output = self.Generator(output)
+        self.last_pred = output
+
+        loss = self.mse_criterion(output, img) + kl_criterion(mu, logvar, B * T)
+        self.optim.zero_grad()
+        loss.backward()
+        self.optimizer_step()
+
+        return loss
 
     def val_one_step(self, img, label):
-        # TODO
-        raise NotImplementedError
+        feature = torch.cat([img, label], dim=1)
+        mu, logvar = self.Gaussian_Predictor(feature)
+
+        noise = self.Gaussian_Predictor.reparameterize(mu, logvar)
+        feature = torch.cat([img, label, noise], dim=1)
+        output = self.Decoder_Fusion(feature)
+        output = self.Generator(output)
+
+        loss = self.mse_criterion(output, img)
+
+        return loss
 
     def make_gif(self, images_list, img_name):
         new_list = []
@@ -225,8 +260,11 @@ class VAE_Model(nn.Module):
         return val_loader
 
     def teacher_forcing_ratio_update(self):
-        # TODO
-        raise NotImplementedError
+        if self.current_epoch < self.tfr_sde:
+            return
+
+        self.tfr = max(self.tfr_min, self.tfr - self.tfr_d_step)
+        print(f"Epoch {self.current_epoch}: Teacher Forcing Ratio updated to {self.tfr}")
 
     def tqdm_bar(self, mode, pbar, loss, lr):
         pbar.set_description(
@@ -302,7 +340,7 @@ if __name__ == "__main__":
         "--num_epoch", type=int, default=70, help="number of total epoch"
     )
     parser.add_argument(
-        "--per_save", type=int, default=3, help="Save checkpoint every seted epoch"
+        "--per_save", type=int, default=3, help="Save checkpoint every set epoch"
     )
     parser.add_argument(
         "--partial",
@@ -353,6 +391,12 @@ if __name__ == "__main__":
         type=float,
         default=0.1,
         help="Decay step that teacher forcing ratio adopted",
+    )
+    parser.add_argument(
+        "--tfr_min",
+        type=float,
+        default=0.0,
+        help="The minimum teacher forcing ratio"
     )
     parser.add_argument(
         "--ckpt_path", type=str, default=None, help="The path of your checkpoints"
