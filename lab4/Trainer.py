@@ -111,8 +111,6 @@ class VAE_Model(nn.Module):
         self.val_vi_len = args.val_vi_len
         self.batch_size = args.batch_size
 
-        self.last_pred = None
-
     def forward(self, img, label):
         pass
 
@@ -144,7 +142,6 @@ class VAE_Model(nn.Module):
                     )
                 )
 
-            self.eval()
             self.current_epoch += 1
             self.scheduler.step()
             self.teacher_forcing_ratio_update()
@@ -161,39 +158,55 @@ class VAE_Model(nn.Module):
                 "val", pbar, loss.detach().cpu(), lr=self.scheduler.get_last_lr()[0]
             )
 
-    def training_one_step(self, img, label, adapt_TeacherForcing):
-        B, T, C, H, W = img.shape
-        if adapt_TeacherForcing and self.last_pred is not None:
-            img = self.last_pred
+    def training_one_step(self, images, labels, adapt_TeacherForcing):
+        B, T, C, H, W = images.shape
+        images = images.view(T, B, C, H, W)
+        labels = labels.view(T, B, C, H, W)
+        last_pred = None
+        total_loss = 0.0
+        for t in range(self.train_vi_len - 1):
+            img = images[t] if adapt_TeacherForcing and last_pred is None else last_pred
+            img_features = self.frame_transformation(img)
+            label_features = self.label_transformation(labels[t])
 
-        feature = torch.cat([img, label], dim=1)
-        mu, logvar = self.Gaussian_Predictor(feature)
+            z, mu, logvar = self.Gaussian_Predictor(img_features, label_features)
+            output = self.Decoder_Fusion(img_features, label_features, z)
+            output = self.Generator(output)
+            last_pred = output
 
-        noise = self.Gaussian_Predictor.reparameterize(mu, logvar)
-        feature = torch.cat([img, label, noise], dim=1)
-        output = self.Decoder_Fusion(feature)
-        output = self.Generator(output)
-        self.last_pred = output
+            loss = self.mse_criterion(output, images[t + 1]) + kl_criterion(
+                mu, logvar, self.batch_size
+            )
+            total_loss += loss
 
-        loss = self.mse_criterion(output, img) + kl_criterion(mu, logvar, B * T)
         self.optim.zero_grad()
-        loss.backward()
+        total_loss.backward()
         self.optimizer_step()
 
-        return loss
+        return total_loss
 
     def val_one_step(self, img, label):
-        feature = torch.cat([img, label], dim=1)
-        mu, logvar = self.Gaussian_Predictor(feature)
+        B, T, C, H, W = img.shape
+        img = img.view(T, B, C, H, W)
+        label = label.view(T, B, C, H, W)
+        last_pred = None
+        total_loss = 0.0
+        for t in range(self.val_vi_len - 1):
+            img = img[t] if last_pred is None else last_pred
+            img_features = self.frame_transformation(img)
+            label_features = self.label_transformation(label[t])
 
-        noise = self.Gaussian_Predictor.reparameterize(mu, logvar)
-        feature = torch.cat([img, label, noise], dim=1)
-        output = self.Decoder_Fusion(feature)
-        output = self.Generator(output)
+            z, mu, logvar = self.Gaussian_Predictor(img_features, label_features)
+            output = self.Decoder_Fusion(img_features, label_features, z)
+            output = self.Generator(output)
+            last_pred = output
 
-        loss = self.mse_criterion(output, img)
+            loss = self.mse_criterion(output, img[t + 1]) + kl_criterion(
+                mu, logvar, self.batch_size
+            )
+            total_loss += loss
 
-        return loss
+        return total_loss
 
     def make_gif(self, images_list, img_name):
         new_list = []
@@ -308,7 +321,6 @@ class VAE_Model(nn.Module):
 
 
 def main(args):
-
     os.makedirs(args.save_root, exist_ok=True)
     model = VAE_Model(args).to(args.device)
     model.load_checkpoint()
@@ -320,7 +332,7 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(add_help=True)
-    parser.add_argument("--batch_size", type=int, default=2)
+    parser.add_argument("--batch_size", type=int, default=1)
     parser.add_argument("--lr", type=float, default=0.001, help="initial learning rate")
     parser.add_argument("--device", type=str, choices=["cuda", "cpu"], default="cuda")
     parser.add_argument("--optim", type=str, choices=["Adam", "AdamW"], default="Adam")
