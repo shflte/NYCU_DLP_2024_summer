@@ -7,3 +7,4 @@ trained/
 dataset/
 *.zip
 *.pth
+saved_models/
