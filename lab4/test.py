@@ -1,7 +1,5 @@
 import os
 import torch
-from torch.utils.data import DataLoader
-from torchvision import transforms
 from tqdm import tqdm
 import numpy as np
 from modules.vae_model import VAE_Model
@@ -16,14 +14,21 @@ def test_step(model, img, label, device, idx, save_root):
     assert img.shape[0] == 1, "Testing video sequence should be 1"
 
     decoded_frame_list = [img[0].cpu()]
-    label_list = []
 
-    # TODO: Implement the inference logic
-    # Your inference logic here
+    last_pred = img[0].to(device)
+    for t in range(1, label.shape[0]):
+        img_features = model.frame_transformation(last_pred)
+        label_features = model.label_transformation(label[t])
+
+        z, mu, logvar = model.Gaussian_Predictor(img_features, label_features)
+        output = model.Decoder_Fusion(img_features, label_features, z)
+        output = model.Generator(output)
+        last_pred = output
+
+        decoded_frame_list.append(output.cpu())
 
     # Please do not modify this part, it is used for visualization
     generated_frame = torch.stack(decoded_frame_list).permute(1, 0, 2, 3, 4)
-    label_frame = torch.stack(label_list).permute(1, 0, 2, 3, 4)
 
     assert generated_frame.shape == (
         1,
@@ -44,9 +49,8 @@ def test(args):
 
     # Load model
     model = VAE_Model(args).to(args.device)
-    if args.ckpt_path:
-        checkpoint = torch.load(args.ckpt_path)
-        model.load_state_dict(checkpoint["state_dict"], strict=True)
+    if args.model_path:
+        model.load_state_dict(torch.load(args.model_path, map_location=args.device, weights_only=True)["state_dict"])
 
     # Load data
     test_loader = get_dataloader(

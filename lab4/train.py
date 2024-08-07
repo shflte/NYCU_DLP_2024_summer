@@ -8,13 +8,24 @@ from modules.vae_model import VAE_Model
 
 
 def save_checkpoint(model, optimizer, save_path, epoch):
+    checkpoint_dir = os.path.join(save_path, "checkpoints")
+    os.makedirs(checkpoint_dir, exist_ok=True)
     checkpoint = {
         "state_dict": model.state_dict(),
         "optimizer": optimizer.state_dict(),
         "epoch": epoch,
     }
-    torch.save(checkpoint, os.path.join(save_path, f"epoch_{epoch}.pth"))
+    torch.save(checkpoint, os.path.join(checkpoint_dir, f"epoch_{epoch}.pth"))
     print(f"Checkpoint saved at epoch {epoch}")
+
+
+def save_final_model(model, optimizer, save_path):
+    final_model_path = os.path.join(save_path, "final_model.pth")
+    torch.save({
+        "state_dict": model.state_dict(),
+        "optimizer": optimizer.state_dict(),
+    }, final_model_path)
+    print(f"Final model saved at {final_model_path}")
 
 
 def train_step(
@@ -123,6 +134,9 @@ def train(args):
         if epoch >= args.tfr_sde:
             args.tfr = max(args.tfr_min, args.tfr - args.tfr_d_step)
             print(f"Epoch {epoch}: Teacher Forcing Ratio updated to {args.tfr}")
+
+    # Save final model
+    save_final_model(model, optimizer, args.save_root)
 
 
 if __name__ == "__main__":
