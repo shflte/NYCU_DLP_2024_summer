@@ -96,7 +96,7 @@ def get_dataloader(
     batch_size,
     num_workers,
     partial=1.0,
-    shuffle=True,
+    shuffle=False,
     drop_last=True,
 ):
     transform = transforms.Compose(

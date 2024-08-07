@@ -4,7 +4,7 @@ device: cuda
 dataset_root: dataset
 model_root: saved_models
 num_workers: 4
-num_epoch: 1
+num_epoch: 100
 per_save: 3
 partial: 1.0
 train_vi_len: 16

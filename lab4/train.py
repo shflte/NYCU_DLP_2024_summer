@@ -35,7 +35,9 @@ def load_latest_checkpoint(model, optimizer, scheduler, model_root):
     files = [f for f in os.listdir(checkpoint_dir) if f.endswith(".pth")]
     if files:
         latest_checkpoint = max(files, key=lambda x: int(x.split("_")[1].split(".")[0]))
-        checkpoint = torch.load(os.path.join(checkpoint_dir, latest_checkpoint))
+        checkpoint = torch.load(
+            os.path.join(checkpoint_dir, latest_checkpoint), weights_only=True
+        )
         model.load_state_dict(checkpoint["model"])
         optimizer.load_state_dict(checkpoint["optimizer"])
         scheduler.load_state_dict(checkpoint["scheduler"])
@@ -68,9 +70,9 @@ def train_step(
         output = model.Generator(output)
         last_pred = output
 
-        loss = mse_criterion(output, images[t + 1]) + kl_anneal_beta * kl_criterion(
-            mu, logvar, B
-        )
+        mse_loss = mse_criterion(output, images[t + 1])
+        kl_loss = kl_criterion(mu, logvar, B)
+        loss = mse_loss + kl_anneal_beta * kl_loss
         total_loss += loss
 
     optimizer.zero_grad()
@@ -91,7 +93,7 @@ def train(args):
         batch_size=args.batch_size,
         num_workers=args.num_workers,
         partial=args.fast_partial if args.fast_train else args.partial,
-        shuffle=True,
+        shuffle=False,
         drop_last=True,
     )
 
@@ -106,7 +108,9 @@ def train(args):
     )
 
     # load latest checkpoint if available
-    current_epoch = load_latest_checkpoint(model, optimizer, scheduler, args.model_root)
+    current_epoch = (
+        load_latest_checkpoint(model, optimizer, scheduler, args.model_root) + 1
+    )
 
     # loss
     mse_criterion = torch.nn.MSELoss()
@@ -135,7 +139,12 @@ def train(args):
                 kl_anneal_beta,
             )
             progress_bar.set_postfix(
-                {"Epoch": epoch, "Loss": loss.item(), "KL Beta": kl_anneal_beta}
+                {
+                    "Epoch": epoch,
+                    "Loss": loss.item(),
+                    "KL Beta": kl_anneal_beta,
+                    "Teacher Forcing": adapt_TeacherForcing,
+                }
             )
 
         if epoch % args.per_save == 0:
