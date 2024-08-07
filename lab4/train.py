@@ -21,10 +21,13 @@ def save_checkpoint(model, optimizer, save_path, epoch):
 
 def save_final_model(model, optimizer, save_path):
     final_model_path = os.path.join(save_path, "final_model.pth")
-    torch.save({
-        "state_dict": model.state_dict(),
-        "optimizer": optimizer.state_dict(),
-    }, final_model_path)
+    torch.save(
+        {
+            "state_dict": model.state_dict(),
+            "optimizer": optimizer.state_dict(),
+        },
+        final_model_path,
+    )
     print(f"Final model saved at {final_model_path}")
 
 

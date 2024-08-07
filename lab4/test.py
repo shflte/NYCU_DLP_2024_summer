@@ -12,7 +12,6 @@ def test_step(model, img, label, device, idx, save_root):
     label = label.permute(1, 0, 2, 3, 4)  # change tensor into (seq, B, C, H, W)
     assert label.shape[0] == 630, "Testing pose sequence should be 630"
     assert img.shape[0] == 1, "Testing video sequence should be 1"
-
     decoded_frame_list = [img[0].cpu()]
 
     last_pred = img[0].to(device)
@@ -50,14 +49,18 @@ def test(args):
     # Load model
     model = VAE_Model(args).to(args.device)
     if args.model_path:
-        model.load_state_dict(torch.load(args.model_path, map_location=args.device, weights_only=True)["state_dict"])
+        model.load_state_dict(
+            torch.load(args.model_path, map_location=args.device, weights_only=True)[
+                "state_dict"
+            ]
+        )
 
     # Load data
     test_loader = get_dataloader(
         root=args.DR,
         frame_H=args.frame_H,
         frame_W=args.frame_W,
-        mode="val",
+        mode="test",
         video_len=args.val_vi_len,
         batch_size=1,
         num_workers=args.num_workers,

@@ -24,7 +24,9 @@ class Dataset_Dance(torchData):
 
     def __init__(self, root, transform, mode="train", video_len=7, partial=1.0):
         super().__init__()
-        assert mode in ["train", "val"], "There is no such mode !!!"
+        assert mode in ["train", "val", "test"], "There is no such mode !!!"
+        self.mode = mode
+
         if mode == "train":
             self.img_folder = sorted(
                 glob(os.path.join(root, "train/train_img/*.png")), key=get_key
@@ -36,9 +38,19 @@ class Dataset_Dance(torchData):
             )
             self.prefix = "val"
         elif mode == "test":
-            self.img_folder = sorted(
-                glob(os.path.join(root, "test/test_img/*.png")), key=get_key
-            )
+            num_folders = len(glob(os.path.join(root, "test/test_img/*")))
+            self.img_folders = [
+                sorted(
+                    glob(os.path.join(root, f"test/test_img/{i}/*.png")), key=get_key
+                )
+                for i in range(num_folders)
+            ]
+            self.label_folders = [
+                sorted(
+                    glob(os.path.join(root, f"test/test_label/{i}/*.png")), key=get_key
+                )
+                for i in range(num_folders)
+            ]
             self.prefix = "test"
         else:
             raise NotImplementedError
@@ -48,22 +60,30 @@ class Dataset_Dance(torchData):
         self.video_len = video_len
 
     def __len__(self):
+        if self.mode == "test":
+            return len(self.img_folders)
         return int(len(self.img_folder) * self.partial) // self.video_len
 
     def __getitem__(self, index):
-        path = self.img_folder[index]
+        if self.mode == "test":
+            img_paths = self.img_folders[index]
+            label_paths = self.label_folders[index]
+        else:
+            path = self.img_folder[index]
+            img_paths = []
+            label_paths = []
+            for i in range(self.video_len):
+                label_list = self.img_folder[(index * self.video_len) + i].split("/")
+                label_list[-2] = self.prefix + "_label"
 
-        imgs = []
-        labels = []
-        for i in range(self.video_len):
-            label_list = self.img_folder[(index * self.video_len) + i].split("/")
-            label_list[-2] = self.prefix + "_label"
+                img_name = self.img_folder[(index * self.video_len) + i]
+                label_name = "/".join(label_list)
 
-            img_name = self.img_folder[(index * self.video_len) + i]
-            label_name = "/".join(label_list)
+                img_paths.append(img_name)
+                label_paths.append(label_name)
 
-            imgs.append(self.transform(imgloader(img_name)))
-            labels.append(self.transform(imgloader(label_name)))
+        imgs = [self.transform(imgloader(img_path)) for img_path in img_paths]
+        labels = [self.transform(imgloader(label_path)) for label_path in label_paths]
         return stack(imgs), stack(labels)
 
 
