@@ -1,7 +1,6 @@
 import torch.nn as nn
 import torch
 from .layers import DepthConvBlock, ResidualBlock
-from torch.autograd import Variable
 
 
 __all__ = [
