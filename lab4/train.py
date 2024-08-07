@@ -7,12 +7,14 @@ from dataloader import get_dataloader
 from modules.vae_model import VAE_Model
 
 
-def save_checkpoint(model, optimizer, model_root, epoch):
+def save_checkpoint(model, optimizer, scheduler, model_root, epoch):
     checkpoint_dir = os.path.join(model_root, "checkpoints")
+    os.makedirs(checkpoint_dir, exist_ok=True)
     torch.save(
         {
-            "state_dict": model.state_dict(),
+            "model": model.state_dict(),
             "optimizer": optimizer.state_dict(),
+            "scheduler": scheduler.state_dict(),
             "epoch": epoch,
         },
         os.path.join(checkpoint_dir, f"epoch_{epoch}.pth"),
@@ -20,16 +22,26 @@ def save_checkpoint(model, optimizer, model_root, epoch):
     print(f"Checkpoint saved at epoch {epoch}")
 
 
-def save_final_model(model, optimizer, model_root):
+def save_final_model(model, model_root):
     final_model_path = os.path.join(model_root, "final_model.pth")
-    torch.save(
-        {
-            "state_dict": model.state_dict(),
-            "optimizer": optimizer.state_dict(),
-        },
-        final_model_path,
-    )
+    torch.save(model.state_dict(), final_model_path)
     print(f"Final model saved at {final_model_path}")
+
+
+def load_latest_checkpoint(model, optimizer, scheduler, model_root):
+    checkpoint_dir = os.path.join(model_root, "checkpoints")
+    os.makedirs(checkpoint_dir, exist_ok=True)
+
+    files = [f for f in os.listdir(checkpoint_dir) if f.endswith(".pth")]
+    if files:
+        latest_checkpoint = max(files, key=lambda x: int(x.split("_")[1].split(".")[0]))
+        checkpoint = torch.load(os.path.join(checkpoint_dir, latest_checkpoint))
+        model.load_state_dict(checkpoint["model"])
+        optimizer.load_state_dict(checkpoint["optimizer"])
+        scheduler.load_state_dict(checkpoint["scheduler"])
+        print(f"Loaded checkpoint from epoch {checkpoint['epoch']}")
+        return checkpoint["epoch"]
+    return 0
 
 
 def train_step(
@@ -86,23 +98,15 @@ def train(args):
     # model
     os.makedirs(args.model_root, exist_ok=True)
     model = VAE_Model(args).to(args.device)
-    checkpoint_dir = os.path.join(args.model_root, "checkpoints")
-    os.makedirs(checkpoint_dir, exist_ok=True)
-
-    files = [f for f in os.listdir(checkpoint_dir) if f.endswith(".pth")]
-    if files:
-        latest_checkpoint = max(files, key=lambda x: int(x.split("_")[1].split(".")[0]))
-        final_model = torch.load(os.path.join(checkpoint_dir, latest_checkpoint))
-        model.load_state_dict(final_model["state_dict"])
-        current_epoch = final_model["epoch"]
-    else:
-        current_epoch = 0
 
     # optimizer
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
     scheduler = torch.optim.lr_scheduler.MultiStepLR(
         optimizer, milestones=[2, 5], gamma=0.1
     )
+
+    # load latest checkpoint if available
+    current_epoch = load_latest_checkpoint(model, optimizer, scheduler, args.model_root)
 
     # loss
     mse_criterion = torch.nn.MSELoss()
@@ -135,7 +139,7 @@ def train(args):
             )
 
         if epoch % args.per_save == 0:
-            save_checkpoint(model, optimizer, args.model_root, epoch)
+            save_checkpoint(model, optimizer, scheduler, args.model_root, epoch)
 
         scheduler.step()
 
@@ -145,7 +149,7 @@ def train(args):
             print(f"Epoch {epoch}: Teacher Forcing Ratio updated to {args.tfr}")
 
     # Save final model
-    save_final_model(model, optimizer, args.model_root)
+    save_final_model(model, args.model_root)
 
 
 if __name__ == "__main__":

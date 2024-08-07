@@ -48,12 +48,11 @@ def test(args):
 
     # Load model
     model = VAE_Model(args).to(args.device)
-    if args.model_path:
-        model.load_state_dict(
-            torch.load(args.model_path, map_location=args.device, weights_only=True)[
-                "state_dict"
-            ]
-        )
+    if not args.model_path:
+        raise ValueError("Please specify the model path")
+    model.load_state_dict(
+        torch.load(args.model_path, map_location=args.device, weights_only=True)
+    )
 
     # Load data
     test_loader = get_dataloader(

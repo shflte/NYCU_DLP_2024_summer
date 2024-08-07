@@ -8,3 +8,4 @@ dataset/
 *.zip
 *.pth
 saved_models/
+predictions/
