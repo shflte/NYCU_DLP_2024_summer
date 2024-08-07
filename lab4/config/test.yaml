@@ -1,7 +1,7 @@
 batch_size: 1
 device: cuda
-DR: dataset
-save_root: predictions
+dataset_root: dataset
+pred_root: predictions
 model_path: saved_models/final_model.pth
 num_workers: 4
 val_vi_len: 630

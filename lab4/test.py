@@ -7,7 +7,7 @@ from dataloader import get_dataloader
 from utils import load_config, save_submission, make_gif
 
 
-def test_step(model, img, label, device, idx, save_root):
+def test_step(model, img, label, device, idx, pred_root):
     img = img.permute(1, 0, 2, 3, 4)  # change tensor into (seq, B, C, H, W)
     label = label.permute(1, 0, 2, 3, 4)  # change tensor into (seq, B, C, H, W)
     assert label.shape[0] == 630, "Testing pose sequence should be 630"
@@ -37,14 +37,14 @@ def test_step(model, img, label, device, idx, save_root):
         64,
     ), f"The shape of output should be (1, 630, 3, 32, 64), but your output shape is {generated_frame.shape}"
 
-    make_gif(generated_frame[0], os.path.join(save_root, f"pred_seq{idx}.gif"))
+    make_gif(generated_frame[0], os.path.join(pred_root, f"pred_seq{idx}.gif"))
 
     generated_frame = generated_frame.reshape(630, -1)
     return generated_frame
 
 
 def test(args):
-    os.makedirs(args.save_root, exist_ok=True)
+    os.makedirs(args.pred_root, exist_ok=True)
 
     # Load model
     model = VAE_Model(args).to(args.device)
@@ -57,7 +57,7 @@ def test(args):
 
     # Load data
     test_loader = get_dataloader(
-        root=args.DR,
+        root=args.dataset_root,
         frame_H=args.frame_H,
         frame_W=args.frame_W,
         mode="test",
@@ -75,10 +75,10 @@ def test(args):
         for idx, (img, label) in enumerate(tqdm(test_loader, ncols=80)):
             img = img.to(args.device)
             label = label.to(args.device)
-            pred_seq = test_step(model, img, label, args.device, idx, args.save_root)
+            pred_seq = test_step(model, img, label, args.device, idx, args.pred_root)
             pred_seq_list.append(pred_seq)
 
-    save_submission(pred_seq_list, args.save_root)
+    save_submission(pred_seq_list, args.pred_root)
 
 
 if __name__ == "__main__":

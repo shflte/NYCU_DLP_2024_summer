@@ -7,20 +7,21 @@ from dataloader import get_dataloader
 from modules.vae_model import VAE_Model
 
 
-def save_checkpoint(model, optimizer, save_path, epoch):
-    checkpoint_dir = os.path.join(save_path, "checkpoints")
-    os.makedirs(checkpoint_dir, exist_ok=True)
-    checkpoint = {
-        "state_dict": model.state_dict(),
-        "optimizer": optimizer.state_dict(),
-        "epoch": epoch,
-    }
-    torch.save(checkpoint, os.path.join(checkpoint_dir, f"epoch_{epoch}.pth"))
+def save_checkpoint(model, optimizer, model_root, epoch):
+    checkpoint_dir = os.path.join(model_root, "checkpoints")
+    torch.save(
+        {
+            "state_dict": model.state_dict(),
+            "optimizer": optimizer.state_dict(),
+            "epoch": epoch,
+        },
+        os.path.join(checkpoint_dir, f"epoch_{epoch}.pth"),
+    )
     print(f"Checkpoint saved at epoch {epoch}")
 
 
-def save_final_model(model, optimizer, save_path):
-    final_model_path = os.path.join(save_path, "final_model.pth")
+def save_final_model(model, optimizer, model_root):
+    final_model_path = os.path.join(model_root, "final_model.pth")
     torch.save(
         {
             "state_dict": model.state_dict(),
@@ -70,7 +71,7 @@ def train_step(
 def train(args):
     # dataset
     train_loader = get_dataloader(
-        root=args.DR,
+        root=args.dataset_root,
         frame_H=args.frame_H,
         frame_W=args.frame_W,
         mode="train",
@@ -83,12 +84,17 @@ def train(args):
     )
 
     # model
-    os.makedirs(args.save_root, exist_ok=True)
+    os.makedirs(args.model_root, exist_ok=True)
     model = VAE_Model(args).to(args.device)
-    if args.ckpt_path:
-        checkpoint = torch.load(args.ckpt_path)
-        model.load_state_dict(checkpoint["state_dict"])
-        current_epoch = checkpoint["epoch"]
+    checkpoint_dir = os.path.join(args.model_root, "checkpoints")
+    os.makedirs(checkpoint_dir, exist_ok=True)
+
+    files = [f for f in os.listdir(checkpoint_dir) if f.endswith(".pth")]
+    if files:
+        latest_checkpoint = max(files, key=lambda x: int(x.split("_")[1].split(".")[0]))
+        final_model = torch.load(os.path.join(checkpoint_dir, latest_checkpoint))
+        model.load_state_dict(final_model["state_dict"])
+        current_epoch = final_model["epoch"]
     else:
         current_epoch = 0
 
@@ -129,7 +135,7 @@ def train(args):
             )
 
         if epoch % args.per_save == 0:
-            save_checkpoint(model, optimizer, args.save_root, epoch)
+            save_checkpoint(model, optimizer, args.model_root, epoch)
 
         scheduler.step()
 
@@ -139,7 +145,7 @@ def train(args):
             print(f"Epoch {epoch}: Teacher Forcing Ratio updated to {args.tfr}")
 
     # Save final model
-    save_final_model(model, optimizer, args.save_root)
+    save_final_model(model, optimizer, args.model_root)
 
 
 if __name__ == "__main__":

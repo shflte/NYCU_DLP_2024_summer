@@ -1,9 +1,8 @@
 batch_size: 1
 lr: 0.001
 device: cuda
-test: false
-DR: dataset
-save_root: saved_models
+dataset_root: dataset
+model_root: saved_models
 num_workers: 4
 num_epoch: 70
 per_save: 3
@@ -24,10 +23,9 @@ tfr: 1.0
 tfr_sde: 10
 tfr_d_step: 0.1
 tfr_min: 0.0
-ckpt_path: null
 
 # Training Strategy
-fast_train: false
+fast_train: true
 fast_partial: 0.4
 fast_train_epoch: 5
 
