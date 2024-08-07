@@ -8,3 +8,4 @@ imageio
 lit
 black
 pandas
+pyyaml
