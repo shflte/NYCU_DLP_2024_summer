@@ -1,11 +1,10 @@
 import os
 from glob import glob
-import torch
 from torch import stack
 from torch.utils.data import Dataset as torchData
-
+from torch.utils.data import DataLoader
 from torchvision.datasets.folder import default_loader as imgloader
-from torch import stack
+from torchvision import transforms
 
 
 def get_key(fp):
@@ -36,6 +35,11 @@ class Dataset_Dance(torchData):
                 glob(os.path.join(root, "val/val_img/*.png")), key=get_key
             )
             self.prefix = "val"
+        elif mode == "test":
+            self.img_folder = sorted(
+                glob(os.path.join(root, "test/test_img/*.png")), key=get_key
+            )
+            self.prefix = "test"
         else:
             raise NotImplementedError
 
@@ -61,3 +65,34 @@ class Dataset_Dance(torchData):
             imgs.append(self.transform(imgloader(img_name)))
             labels.append(self.transform(imgloader(label_name)))
         return stack(imgs), stack(labels)
+
+
+def get_dataloader(
+    root,
+    frame_H,
+    frame_W,
+    mode,
+    video_len,
+    batch_size,
+    num_workers,
+    partial=1.0,
+    shuffle=True,
+    drop_last=True,
+):
+    transform = transforms.Compose(
+        [
+            transforms.Resize((frame_H, frame_W)),
+            transforms.ToTensor(),
+        ]
+    )
+    dataset = Dataset_Dance(
+        root=root, transform=transform, mode=mode, video_len=video_len, partial=partial
+    )
+    dataloader = DataLoader(
+        dataset,
+        batch_size=batch_size,
+        num_workers=num_workers,
+        shuffle=shuffle,
+        drop_last=drop_last,
+    )
+    return dataloader
