@@ -87,6 +87,7 @@ def train_step(
 
     optimizer.zero_grad()
     total_loss.backward()
+    torch.nn.utils.clip_grad_norm_(model.parameters(), 1)
     optimizer.step()
 
     return total_loss
