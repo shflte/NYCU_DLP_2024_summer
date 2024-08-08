@@ -43,7 +43,7 @@ def load_latest_checkpoint(model, optimizer, scheduler, model_root):
         scheduler.load_state_dict(checkpoint["scheduler"])
         print(f"Loaded checkpoint from epoch {checkpoint['epoch']}")
         return checkpoint["epoch"]
-    return 0
+    return -1
 
 
 def train_step(
@@ -61,10 +61,9 @@ def train_step(
     last_pred = None
     total_loss = 0.0
     for t in range(T - 1):
-        img = images[t] if adapt_TeacherForcing and last_pred is None else last_pred
+        img = images[t] if adapt_TeacherForcing or last_pred is None else last_pred
         img_features = model.frame_transformation(img)
         label_features = model.label_transformation(labels[t])
-
         z, mu, logvar = model.Gaussian_Predictor(img_features, label_features)
         output = model.Decoder_Fusion(img_features, label_features, z)
         output = model.Generator(output)
@@ -120,7 +119,8 @@ def train(args):
 
     # training
     model.train()
-    for epoch in range(current_epoch, args.num_epoch):
+    epochs = args.num_epoch if not args.fast_train else args.fast_train_epoch
+    for epoch in range(current_epoch, epochs):
         adapt_TeacherForcing = random.random() < args.tfr
         kl_anneal.update()
         kl_anneal_beta = kl_anneal.get_beta()

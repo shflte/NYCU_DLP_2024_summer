@@ -25,11 +25,11 @@ tfr_d_step: 0.1
 tfr_min: 0.0
 
 # Training Strategy
-fast_train: true
+fast_train: false
 fast_partial: 0.4
-fast_train_epoch: 5
+fast_train_epoch: 3
 
 # KL annealing strategy arguments
-kl_anneal_type: Cyclical
+kl_anneal_type: Monotonic
 kl_anneal_cycle: 10
 kl_anneal_ratio: 1
