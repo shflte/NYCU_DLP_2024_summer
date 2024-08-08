@@ -7,19 +7,21 @@ from dataloader import get_dataloader
 from utils import load_config, save_submission, make_gif
 
 
-def test_step(model, img, label, device, idx, pred_root):
-    img = img.permute(1, 0, 2, 3, 4)  # change tensor into (seq, B, C, H, W)
-    label = label.permute(1, 0, 2, 3, 4)  # change tensor into (seq, B, C, H, W)
-    assert label.shape[0] == 630, "Testing pose sequence should be 630"
-    assert img.shape[0] == 1, "Testing video sequence should be 1"
-    decoded_frame_list = [img[0].cpu()]
+def test_step(model, images, labels, device, idx, pred_root):
+    B, T, C, H, W = labels.shape
+    images = images.permute(1, 0, 2, 3, 4)
+    labels = labels.permute(1, 0, 2, 3, 4)
+    assert labels.shape[0] == 630, "Testing pose sequence should be 630"
+    assert images.shape[0] == 1, "Testing video sequence should be 1"
+    decoded_frame_list = [images[0].cpu()]
 
-    last_pred = img[0].to(device)
-    for t in range(1, label.shape[0]):
+    last_pred = images[0].to(device)
+    # t: frame t to predict
+    for t in range(1, T):
         img_features = model.frame_transformation(last_pred)
-        label_features = model.label_transformation(label[t])
+        label_features = model.label_transformation(labels[t])
 
-        z, mu, logvar = model.Gaussian_Predictor(img_features, label_features)
+        z = torch.randn(B, 12, H, W).to(device)
         output = model.Decoder_Fusion(img_features, label_features, z)
         output = model.Generator(output)
         last_pred = output
