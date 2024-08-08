@@ -29,6 +29,7 @@ def kl_criterion(mu, logvar, batch_size):
     KLD /= batch_size
     return KLD
 
+import numpy as np
 
 class kl_annealing:
     def __init__(self, args, current_epoch=0):
@@ -36,32 +37,30 @@ class kl_annealing:
         self.kl_anneal_cycle = args.kl_anneal_cycle
         self.kl_anneal_ratio = args.kl_anneal_ratio
         self.current_epoch = current_epoch
-        self.beta = 0.0
+        self.beta = self.calculate_beta()
 
-    def update(self):
+    def calculate_beta(self):
         if self.kl_anneal_type == "Cyclical":
-            self.beta = self.frange_cycle_linear(
+            return self.frange_cycle_linear(
                 self.current_epoch,
                 n_iter=self.kl_anneal_cycle,
                 ratio=self.kl_anneal_ratio,
             )
         elif self.kl_anneal_type == "Monotonic":
-            self.beta = min(1.0, self.current_epoch / self.kl_anneal_cycle)
+            return min(1.0, self.current_epoch / self.kl_anneal_cycle)
         else:
-            self.beta = 1.0  # Without KL annealing
+            return 1.0
+
+    def update(self):
+        self.current_epoch += 1
+        self.beta = self.calculate_beta()
 
     def get_beta(self):
         return self.beta
 
-    def frange_cycle_linear(
-        self, current_epoch, n_iter, start=0.0, stop=1.0, n_cycle=1, ratio=1
-    ):
+    def frange_cycle_linear(self, current_epoch, n_iter, start=0.0, stop=1.0, n_cycle=1, ratio=1):
         L = np.linspace(start, stop, num=int(n_iter * ratio))
-        beta = []
-        for _ in range(n_cycle):
-            beta.extend(L)
-            beta.extend(L[::-1])
-        beta = np.array(beta)
+        beta = np.tile(np.concatenate([L, L[::-1]]), n_cycle)
         return beta[min(current_epoch, len(beta) - 1)]
 
 
