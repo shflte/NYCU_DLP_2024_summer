@@ -60,16 +60,27 @@ def train_step(
     labels = labels.view(T, B, C, H, W)
     last_pred = None
     total_loss = 0.0
-    for t in range(T - 1):
-        img = images[t] if adapt_TeacherForcing or last_pred is None else last_pred
-        img_features = model.frame_transformation(img)
-        label_features = model.label_transformation(labels[t])
-        z, mu, logvar = model.Gaussian_Predictor(img_features, label_features)
-        output = model.Decoder_Fusion(img_features, label_features, z)
-        output = model.Generator(output)
-        last_pred = output
+    # t: frame_t to generate
+    for t in range(1, T):
+        img = images[t - 1] if adapt_TeacherForcing or last_pred is None else last_pred
 
-        mse_loss = mse_criterion(output, images[t + 1])
+        # encode
+        img_features = model.frame_transformation(img)
+        real_frame_features = model.frame_transformation(images[t])
+        label_features = model.label_transformation(labels[t])
+
+        # gaussian predictor
+        z, mu, logvar = model.Gaussian_Predictor(real_frame_features, label_features)
+
+        # decode
+        output = model.Decoder_Fusion(img_features, label_features, z)
+
+        # generate
+        prediction = model.Generator(output)
+        last_pred = prediction
+
+        # loss
+        mse_loss = mse_criterion(prediction, images[t])
         kl_loss = kl_criterion(mu, logvar, B)
         loss = mse_loss + kl_anneal_beta * kl_loss
         total_loss += loss
@@ -122,7 +133,6 @@ def train(args):
     epochs = args.num_epoch if not args.fast_train else args.fast_train_epoch
     for epoch in range(current_epoch, epochs):
         adapt_TeacherForcing = random.random() < args.tfr
-        kl_anneal.update()
         kl_anneal_beta = kl_anneal.get_beta()
 
         progress_bar = tqdm(train_loader, ncols=120)
@@ -146,6 +156,8 @@ def train(args):
                     "Teacher Forcing": adapt_TeacherForcing,
                 }
             )
+
+        kl_anneal.update()
 
         if epoch % args.per_save == 0:
             save_checkpoint(model, optimizer, scheduler, args.model_root, epoch)
