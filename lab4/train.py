@@ -2,7 +2,7 @@ import os
 import torch
 from tqdm import tqdm
 import random
-from utils import load_config, kl_criterion, kl_annealing
+from utils import load_config, kl_criterion, kl_annealing, set_random_seed
 from dataloader import get_dataloader
 from modules.vae_model import VAE_Model
 
@@ -93,6 +93,9 @@ def train_step(
 
 
 def train(args):
+    # set random seed
+    set_random_seed(args.seed)
+
     # dataset
     train_loader = get_dataloader(
         root=args.dataset_root,

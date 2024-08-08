@@ -1,4 +1,5 @@
 import os
+import random
 import yaml
 import torch
 import pandas as pd
@@ -6,6 +7,17 @@ import numpy as np
 import torch.nn as nn
 from torchvision import transforms
 from math import log10
+
+
+def set_random_seed(seed):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
 
 
 def load_config(config_path):
@@ -29,7 +41,6 @@ def kl_criterion(mu, logvar, batch_size):
     KLD /= batch_size
     return KLD
 
-import numpy as np
 
 class kl_annealing:
     def __init__(self, args, current_epoch=0):

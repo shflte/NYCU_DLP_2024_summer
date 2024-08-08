@@ -4,7 +4,7 @@ from tqdm import tqdm
 import numpy as np
 from modules.vae_model import VAE_Model
 from dataloader import get_dataloader
-from utils import load_config, save_submission, make_gif
+from utils import load_config, save_submission, make_gif, set_random_seed
 
 
 def test_step(model, images, labels, device, idx, pred_root):
@@ -47,6 +47,9 @@ def test_step(model, images, labels, device, idx, pred_root):
 
 def test(args):
     os.makedirs(args.pred_root, exist_ok=True)
+
+    # set random seed
+    set_random_seed(args.seed)
 
     # Load model
     model = VAE_Model(args).to(args.device)

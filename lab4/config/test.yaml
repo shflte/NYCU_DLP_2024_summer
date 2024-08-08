@@ -3,6 +3,7 @@ device: cuda
 dataset_root: dataset
 pred_root: predictions
 model_path: saved_models/final_model.pth
+seed: 615
 num_workers: 4
 val_vi_len: 630
 frame_H: 32

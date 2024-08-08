@@ -3,6 +3,7 @@ lr: 0.001
 device: cuda
 dataset_root: dataset
 model_root: saved_models
+seed: 615
 num_workers: 4
 num_epoch: 100
 per_save: 3
@@ -25,7 +26,7 @@ tfr_d_step: 0.1
 tfr_min: 0.0
 
 # Training Strategy
-fast_train: false
+fast_train: true
 fast_partial: 0.4
 fast_train_epoch: 3
 
