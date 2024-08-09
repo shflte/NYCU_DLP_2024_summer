@@ -1,8 +1,15 @@
 import os
 import torch
 from tqdm import tqdm
-import random
-from utils import load_config, kl_criterion, kl_annealing, set_random_seed
+from utils import (
+    load_config,
+    kl_criterion,
+    kl_annealing,
+    teacher_forcing,
+    set_random_seed,
+    show_loss,
+    show_loss_kl_anneal,
+)
 from dataloader import get_dataloader
 from modules.vae_model import VAE_Model
 
@@ -60,6 +67,7 @@ def train_step(
     labels = labels.view(T, B, C, H, W)
     last_pred = None
     total_loss = 0.0
+
     # t: frame_t to generate
     for t in range(1, T):
         img = images[t - 1] if adapt_TeacherForcing or last_pred is None else last_pred
@@ -132,14 +140,21 @@ def train(args):
     # KL annealing
     kl_anneal = kl_annealing(args, current_epoch)
 
+    # Teacher Forcing Ratio
+    tf = teacher_forcing(args, current_epoch)
+
     # training
     model.train()
     epochs = args.num_epoch if not args.fast_train else args.fast_train_epoch
+    loss_list = []
+    kl_beta_list = []
     for epoch in range(current_epoch, epochs):
-        adapt_TeacherForcing = random.random() < args.tfr
+        adapt_teacher_forcing = tf.adapt_teacher_forcing()
         kl_anneal_beta = kl_anneal.get_beta()
+        kl_beta_list.append(kl_anneal_beta)
 
         progress_bar = tqdm(train_loader, ncols=120)
+        total_loss_per_epoch = 0.0
         for img, label in progress_bar:
             img = img.to(args.device)
             label = label.to(args.device)
@@ -147,34 +162,38 @@ def train(args):
                 model,
                 img,
                 label,
-                adapt_TeacherForcing,
+                adapt_teacher_forcing,
                 optimizer,
                 mse_criterion,
                 kl_anneal_beta,
             )
+            total_loss_per_epoch += loss.item()
             progress_bar.set_postfix(
                 {
                     "Epoch": epoch,
                     "Loss": loss.item(),
                     "KL Beta": kl_anneal_beta,
-                    "Teacher Forcing": adapt_TeacherForcing,
+                    "TF": str(adapt_teacher_forcing),
+                    "TFR": f"{tf.get_tfr():.2f}",
                 }
             )
 
         kl_anneal.update()
+        tf.update()
 
         if epoch % args.per_save == 0:
             save_checkpoint(model, optimizer, scheduler, args.model_root, epoch)
 
         scheduler.step()
 
-        # Update Teacher Forcing Ratio
-        if epoch >= args.tfr_sde:
-            args.tfr = max(args.tfr_min, args.tfr - args.tfr_d_step)
-            print(f"Epoch {epoch}: Teacher Forcing Ratio updated to {args.tfr}")
+        loss_list.append(total_loss_per_epoch / len(train_loader))
 
     # Save final model
     save_final_model(model, args.model_root)
+
+    # Show the result
+    show_loss(loss_list)
+    show_loss_kl_anneal(loss_list, kl_beta_list)
 
 
 if __name__ == "__main__":
