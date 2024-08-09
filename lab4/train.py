@@ -189,7 +189,7 @@ def train(args):
                 {
                     "Epoch": epoch,
                     "Loss": f"{loss.item():.5f}",
-                    "KL Beta": kl_anneal_beta,
+                    "KL Beta": f"{kl_anneal_beta:.1f}",
                     "TFR": f"{tf.get_tfr():.2f}",
                 }
             )
