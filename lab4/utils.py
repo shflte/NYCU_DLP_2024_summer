@@ -34,7 +34,8 @@ def Generate_PSNR(imgs1, imgs2, data_range=1.0):
     """PSNR for torch tensor"""
     mse = nn.functional.mse_loss(imgs1, imgs2, reduction="none")
     mse = mse.view(mse.size(0), -1).mean(dim=1)
-    psnr = 20 * torch.log10(data_range) - 10 * torch.log10(mse)
+    data_range_tensor = torch.tensor(data_range).to(imgs1.device)
+    psnr = 20 * torch.log10(data_range_tensor) - 10 * torch.log10(mse)
     return psnr
 
 
@@ -133,6 +134,17 @@ def show_loss(losses):
     plt.savefig("training_loss.png")
 
 
+def show_psnr(psnr_list):
+    """Plot PSNR over epochs."""
+    plt.figure(figsize=(10, 5))
+    plt.plot(psnr_list, label="PSNR")
+    plt.xlabel("Epoch")
+    plt.ylabel("PSNR (dB)")
+    plt.title("PSNR Over Time")
+    plt.legend()
+    plt.savefig("training_psnr.png")
+
+
 def show_loss_kl_anneal(losses, kl_betas):
     """Plot training loss and KL annealing beta over epochs."""
     fig, ax1 = plt.subplots(figsize=(10, 5))
@@ -173,14 +185,3 @@ def show_loss_tfr(losses, tfrs):
     fig.tight_layout()
     plt.title("Training Loss and Teacher Forcing Ratio Over Time")
     plt.savefig("training_loss_tfr.png")
-
-
-def show_psnr(psnr_list):
-    """Plot PSNR for all frames across training."""
-    plt.figure(figsize=(10, 5))
-    plt.plot(psnr_list, label="PSNR per Frame")
-    plt.xlabel("Frame Index")
-    plt.ylabel("PSNR (dB)")
-    plt.title("PSNR Across All Frames During Training")
-    plt.legend()
-    plt.savefig("psnr_across_all_frames.png")

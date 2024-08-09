@@ -8,9 +8,11 @@ from utils import (
     teacher_forcing,
     set_random_seed,
     show_loss,
+    show_psnr,
     show_loss_kl_anneal,
     show_loss_tfr,
 )
+from validate import validate
 from dataloader import get_dataloader
 from modules.vae_model import VAE_Model
 
@@ -119,6 +121,18 @@ def train(args):
         shuffle=False,
         drop_last=True,
     )
+    val_loader = get_dataloader(
+        root=args.dataset_root,
+        frame_H=args.frame_H,
+        frame_W=args.frame_W,
+        mode="val",
+        video_len=args.train_vi_len,
+        batch_size=args.batch_size,
+        num_workers=args.num_workers,
+        partial=1.0,
+        shuffle=False,
+        drop_last=True,
+    )
 
     # model
     os.makedirs(args.model_root, exist_ok=True)
@@ -145,12 +159,13 @@ def train(args):
     tf = teacher_forcing(args, current_epoch)
 
     # training
-    model.train()
     epochs = args.num_epoch if not args.fast_train else args.fast_train_epoch
     loss_list = []
     kl_beta_list = []
     tfr_list = []
+    psnr_list = []
     for epoch in range(current_epoch, epochs):
+        model.train()
         kl_anneal_beta = kl_anneal.get_beta()
         kl_beta_list.append(kl_anneal_beta)
         adapt_teacher_forcing = tf.adapt_teacher_forcing()
@@ -179,6 +194,10 @@ def train(args):
                 }
             )
 
+        # validate
+        avg_psnr = validate(model, val_loader, args.device)
+        psnr_list.append(avg_psnr)
+
         kl_anneal.update()
         tf.update()
 
@@ -194,6 +213,7 @@ def train(args):
 
     # Show the result
     show_loss(loss_list)
+    show_psnr(psnr_list)
     show_loss_kl_anneal(loss_list, kl_beta_list)
     show_loss_tfr(loss_list, tfr_list)
 
