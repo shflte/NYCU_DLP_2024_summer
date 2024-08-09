@@ -96,9 +96,6 @@ class teacher_forcing:
     def get_tfr(self):
         return self.tfr
 
-    def adapt_teacher_forcing(self):
-        return random.random() < self.tfr
-
 
 def save_submission(pred_seq_list, save_root):
     pred_to_int = (np.rint(torch.cat(pred_seq_list).numpy() * 255)).astype(int)

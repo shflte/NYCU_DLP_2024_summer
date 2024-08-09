@@ -1,5 +1,6 @@
 import os
 import torch
+import random
 from tqdm import tqdm
 from utils import (
     load_config,
@@ -60,7 +61,7 @@ def train_step(
     model,
     images,
     labels,
-    adapt_TeacherForcing,
+    tfr,
     optimizer,
     mse_criterion,
     kl_anneal_beta,
@@ -72,8 +73,9 @@ def train_step(
     total_loss = 0.0
 
     # t: frame_t to generate
+    adapt_teacher_forcing = random.random() < tfr
     for t in range(1, T):
-        img = images[t - 1] if adapt_TeacherForcing or last_pred is None else last_pred
+        img = images[t - 1] if adapt_teacher_forcing or last_pred is None else last_pred
 
         # encode
         img_features = model.frame_transformation(img)
@@ -168,7 +170,6 @@ def train(args):
         model.train()
         kl_anneal_beta = kl_anneal.get_beta()
         kl_beta_list.append(kl_anneal_beta)
-        adapt_teacher_forcing = tf.adapt_teacher_forcing()
         tfr_list.append(tf.get_tfr())
 
         progress_bar = tqdm(train_loader, ncols=120)
@@ -179,7 +180,7 @@ def train(args):
                 model,
                 img,
                 label,
-                adapt_teacher_forcing,
+                tf.get_tfr(),
                 optimizer,
                 mse_criterion,
                 kl_anneal_beta,
@@ -189,7 +190,6 @@ def train(args):
                     "Epoch": epoch,
                     "Loss": f"{loss.item():.5f}",
                     "KL Beta": kl_anneal_beta,
-                    "TF": str(adapt_teacher_forcing),
                     "TFR": f"{tf.get_tfr():.2f}",
                 }
             )
