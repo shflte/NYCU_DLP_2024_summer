@@ -157,7 +157,6 @@ def train(args):
         tfr_list.append(tf.get_tfr())
 
         progress_bar = tqdm(train_loader, ncols=120)
-        total_loss_per_epoch = 0.0
         for img, label in progress_bar:
             img = img.to(args.device)
             label = label.to(args.device)
@@ -170,7 +169,6 @@ def train(args):
                 mse_criterion,
                 kl_anneal_beta,
             )
-            total_loss_per_epoch += loss.item()
             progress_bar.set_postfix(
                 {
                     "Epoch": epoch,
@@ -189,7 +187,7 @@ def train(args):
 
         scheduler.step()
 
-        loss_list.append(total_loss_per_epoch / len(train_loader))
+        loss_list.append(loss.item())
 
     # Save final model
     save_final_model(model, args.model_root)
