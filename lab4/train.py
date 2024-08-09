@@ -187,7 +187,7 @@ def train(args):
             progress_bar.set_postfix(
                 {
                     "Epoch": epoch,
-                    "Loss": loss.item(),
+                    "Loss": f"{loss.item():.5f}",
                     "KL Beta": kl_anneal_beta,
                     "TF": str(adapt_teacher_forcing),
                     "TFR": f"{tf.get_tfr():.2f}",
