@@ -9,6 +9,7 @@ from utils import (
     set_random_seed,
     show_loss,
     show_loss_kl_anneal,
+    show_loss_tfr,
 )
 from dataloader import get_dataloader
 from modules.vae_model import VAE_Model
@@ -148,10 +149,12 @@ def train(args):
     epochs = args.num_epoch if not args.fast_train else args.fast_train_epoch
     loss_list = []
     kl_beta_list = []
+    tfr_list = []
     for epoch in range(current_epoch, epochs):
-        adapt_teacher_forcing = tf.adapt_teacher_forcing()
         kl_anneal_beta = kl_anneal.get_beta()
         kl_beta_list.append(kl_anneal_beta)
+        adapt_teacher_forcing = tf.adapt_teacher_forcing()
+        tfr_list.append(tf.get_tfr())
 
         progress_bar = tqdm(train_loader, ncols=120)
         total_loss_per_epoch = 0.0
@@ -194,6 +197,7 @@ def train(args):
     # Show the result
     show_loss(loss_list)
     show_loss_kl_anneal(loss_list, kl_beta_list)
+    show_loss_tfr(loss_list, tfr_list)
 
 
 if __name__ == "__main__":

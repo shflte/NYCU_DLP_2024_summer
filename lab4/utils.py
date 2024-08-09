@@ -90,7 +90,7 @@ class teacher_forcing:
 
     def update(self):
         self.current_epoch += 1
-        self.tfr = max(self.tfr_min, self.tfr - self.tfr_d_step)
+        self.tfr = self.calculate_tfr()
 
     def calculate_tfr(self):
         if self.current_epoch <= self.tfr_sde:
@@ -161,7 +161,28 @@ def show_loss_kl_anneal(losses, kl_betas):
 
     fig.tight_layout()
     plt.title("Training Loss and KL Annealing Over Time")
-    plt.show()
+    plt.savefig("training_loss_kl_anneal.png")
+
+
+def show_loss_tfr(losses, tfrs):
+    """Plot training loss and Teacher Forcing Ratio over epochs."""
+    fig, ax1 = plt.subplots(figsize=(10, 5))
+
+    color = "tab:blue"
+    ax1.set_xlabel("Epoch")
+    ax1.set_ylabel("Loss", color=color)
+    ax1.plot(losses, color=color, label="Loss")
+    ax1.tick_params(axis="y", labelcolor=color)
+
+    ax2 = ax1.twinx()
+    color = "tab:green"
+    ax2.set_ylabel("Teacher Forcing Ratio", color=color)
+    ax2.plot(tfrs, color=color, linestyle="--", label="TFR")
+    ax2.tick_params(axis="y", labelcolor=color)
+
+    fig.tight_layout()
+    plt.title("Training Loss and Teacher Forcing Ratio Over Time")
+    plt.savefig("training_loss_tfr.png")
 
 
 def show_psnr(psnr_list):
@@ -173,4 +194,3 @@ def show_psnr(psnr_list):
     plt.title("PSNR Across All Frames During Training")
     plt.legend()
     plt.savefig("psnr_across_all_frames.png")
-    plt.show()
