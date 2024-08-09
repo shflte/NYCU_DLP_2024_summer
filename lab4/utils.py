@@ -54,11 +54,8 @@ class kl_annealing:
 
     def calculate_beta(self):
         if self.kl_anneal_type == "Cyclical":
-            return self.frange_cycle_linear(
-                self.current_epoch,
-                n_iter=self.kl_anneal_cycle,
-                ratio=self.kl_anneal_ratio,
-            )
+            cycle = self.current_epoch % self.kl_anneal_cycle / self.kl_anneal_cycle
+            return min(1.0, 2 * cycle)
         elif self.kl_anneal_type == "Monotonic":
             return min(1.0, self.current_epoch / self.kl_anneal_cycle)
         else:
@@ -70,13 +67,6 @@ class kl_annealing:
 
     def get_beta(self):
         return self.beta
-
-    def frange_cycle_linear(
-        self, current_epoch, n_iter, start=0.0, stop=1.0, n_cycle=1, ratio=1
-    ):
-        L = np.linspace(start, stop, num=int(n_iter * ratio))
-        beta = np.tile(np.concatenate([L, L[::-1]]), n_cycle)
-        return beta[min(current_epoch, len(beta) - 1)]
 
 
 class teacher_forcing:
