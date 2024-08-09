@@ -31,8 +31,9 @@ def load_config(config_path):
 
 def Generate_PSNR(imgs1, imgs2, data_range=1.0):
     """PSNR for torch tensor"""
-    mse = nn.functional.mse_loss(imgs1, imgs2)  # wrong computation for batch size > 1
-    psnr = 20 * log10(data_range) - 10 * torch.log10(mse)
+    mse = nn.functional.mse_loss(imgs1, imgs2, reduction="none")
+    mse = mse.view(mse.size(0), -1).mean(dim=1)
+    psnr = 20 * torch.log10(data_range) - 10 * torch.log10(mse)
     return psnr
 
 
