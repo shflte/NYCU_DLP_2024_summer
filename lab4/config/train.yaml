@@ -1,11 +1,11 @@
-batch_size: 1
+batch_size: 4
 lr: 0.001
 device: cuda
 dataset_root: dataset
 model_root: saved_models
-seed: 615
+seed: 35711
 num_workers: 4
-num_epoch: 100
+num_epoch: 110
 per_save: 3
 partial: 1.0
 train_vi_len: 16
@@ -20,15 +20,15 @@ N_dim: 12
 D_out_dim: 192
 
 # Teacher Forcing strategy
-tfr: 1.0
-tfr_sde: 10
-tfr_d_step: 0.1
+tfr_init: 1.0
+tfr_sde: 2
+tfr_d_step: 0.4
 tfr_min: 0.0
 
 # Training Strategy
-fast_train: true
+fast_train: false
 fast_partial: 0.4
-fast_train_epoch: 3
+fast_train_epoch: 10
 
 # KL annealing strategy arguments
 kl_anneal_type: Monotonic

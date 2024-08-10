@@ -134,4 +134,4 @@ dependencies:
       - tzdata==2024.1
       - werkzeug==3.0.1
       - zipp==3.18.1
-prefix: /home/wendy/miniconda3/envs/maskgit
+prefix: /home/ccp/dlp/lab5/maskgit
