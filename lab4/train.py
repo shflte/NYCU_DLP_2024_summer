@@ -61,7 +61,7 @@ def train_step(
     model,
     images,
     labels,
-    tfr,
+    adapt_teacher_forcing,
     optimizer,
     mse_criterion,
     kl_anneal_beta,
@@ -73,7 +73,6 @@ def train_step(
     total_loss = 0.0
 
     # t: frame_t to generate
-    adapt_teacher_forcing = random.random() < tfr
     for t in range(1, T):
         img = images[t - 1] if adapt_teacher_forcing or last_pred is None else last_pred
 
@@ -171,6 +170,7 @@ def train(args):
         kl_anneal_beta = kl_anneal.get_beta()
         kl_beta_list.append(kl_anneal_beta)
         tfr_list.append(tf.get_tfr())
+        adapt_teacher_forcing = random.random() < tf.get_tfr()
 
         progress_bar = tqdm(train_loader, ncols=120)
         for img, label in progress_bar:
@@ -180,7 +180,7 @@ def train(args):
                 model,
                 img,
                 label,
-                tf.get_tfr(),
+                adapt_teacher_forcing,
                 optimizer,
                 mse_criterion,
                 kl_anneal_beta,

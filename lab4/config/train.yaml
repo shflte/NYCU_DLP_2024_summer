@@ -3,9 +3,9 @@ lr: 0.001
 device: cuda
 dataset_root: dataset
 model_root: saved_models
-seed: 35711
+seed: 1831429
 num_workers: 4
-num_epoch: 110
+num_epoch: 100
 per_save: 3
 partial: 1.0
 train_vi_len: 16
@@ -20,9 +20,9 @@ N_dim: 12
 D_out_dim: 192
 
 # Teacher Forcing strategy
-tfr_init: 1.0
-tfr_sde: 2
-tfr_d_step: 0.4
+tfr_init: 0.0
+tfr_sde: 10
+tfr_d_step: 0.1
 tfr_min: 0.0
 
 # Training Strategy
