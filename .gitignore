@@ -9,3 +9,5 @@ dataset/
 *.pth
 saved_models/
 predictions/
+*.csv
+permanent/
