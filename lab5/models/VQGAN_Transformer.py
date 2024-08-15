@@ -8,7 +8,6 @@ from .VQGAN import VQGAN
 from .Transformer import BidirectionalTransformer
 
 
-# TODO2 step1: design the MaskGIT model
 class MaskGit(nn.Module):
     def __init__(self, configs):
         super().__init__()
@@ -31,68 +30,37 @@ class MaskGit(nn.Module):
         model = model.eval()
         return model
 
-    ##TODO2 step1-1: input x fed to vqgan encoder to get the latent and zq
     @torch.no_grad()
     def encode_to_z(self, x):
-        raise Exception("TODO2 step1-1!")
-        return None
+        codebook_mapping, codebook_indices, _ = self.vqgan.encode(x)
+        batch_size = codebook_mapping.shape[0]
+        codebook_indices = codebook_indices.view(batch_size, -1)
+        return codebook_mapping, codebook_indices
 
-    ##TODO2 step1-2:
     def gamma_func(self, mode="cosine"):
-        """Generates a mask rate by scheduling mask functions R.
+        def linear_func(ratio):
+            return 1.0 - ratio
 
-        Given a ratio in [0, 1), we generate a masking ratio from (0, 1].
-        During training, the input ratio is uniformly sampled;
-        during inference, the input ratio is based on the step number divided by the total iteration number: t/T.
-        Based on experiements, we find that masking more in training helps.
+        def cosine_func(ratio):
+            return 0.5 * (1.0 + math.cos(math.pi * ratio))
 
-        ratio:   The uniformly sampled ratio [0, 1) as input.
-        Returns: The mask rate (float).
+        def square_func(ratio):
+            return 1.0 - (ratio**2)
 
-        """
         if mode == "linear":
-            raise Exception("TODO2 step1-2!")
-            return None
+            return linear_func
         elif mode == "cosine":
-            raise Exception("TODO2 step1-2!")
-            return None
+            return cosine_func
         elif mode == "square":
-            raise Exception("TODO2 step1-2!")
-            return None
+            return square_func
         else:
-            raise NotImplementedError
+            raise NotImplementedError(f"Unknown gamma mode: {mode}")
 
-    ##TODO2 step1-3:
     def forward(self, x):
+        _, z_indices = self.encode_to_z(x)
+        logits = self.transformer(z_indices)
 
-        z_indices = None  # ground truth
-        logits = None  # transformer predict the probability of tokens
-        raise Exception("TODO2 step1-3!")
         return logits, z_indices
-
-    ##TODO3 step1-1: define one iteration decoding
-    @torch.no_grad()
-    def inpainting(self):
-        raise Exception("TODO3 step1-1!")
-        logits = self.transformer(None)
-        # Apply softmax to convert logits into a probability distribution across the last dimension.
-        logits = None
-
-        # FIND MAX probability for each token value
-        z_indices_predict_prob, z_indices_predict = None
-
-        ratio = None
-        # predicted probabilities add temperature annealing gumbel noise as confidence
-        g = None  # gumbel noise
-        temperature = self.choice_temperature * (1 - ratio)
-        confidence = z_indices_predict_prob + temperature * g
-
-        # hint: If mask is False, the probability should be set to infinity, so that the tokens are not affected by the transformer's prediction
-        # sort the confidence for the rank
-        # define how much the iteration remain predicted tokens by mask scheduling
-        # At the end of the decoding process, add back the original token values that were not masked to the predicted tokens
-        mask_bc = None
-        return z_indices_predict, mask_bc
 
 
 __MODEL_TYPE__ = {"MaskGit": MaskGit}

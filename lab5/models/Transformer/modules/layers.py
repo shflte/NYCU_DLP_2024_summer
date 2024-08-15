@@ -3,20 +3,45 @@ import torch
 import math
 
 
-# TODO1
 class MultiHeadAttention(nn.Module):
     def __init__(self, dim=768, num_heads=16, attn_drop=0.1):
         super(MultiHeadAttention, self).__init__()
 
+        self.num_heads = num_heads
+        self.dim = dim
+        self.d_q = dim // num_heads
+        self.d_k = dim // num_heads
+        self.d_v = dim // num_heads
+
+        self.q_linear = nn.Linear(dim, dim)
+        self.k_linear = nn.Linear(dim, dim)
+        self.v_linear = nn.Linear(dim, dim)
+
+        self.out_linear = nn.Linear(dim, dim)
+
+        self.attn_drop = nn.Dropout(attn_drop)
+
     def forward(self, x):
-        """Hint: input x tensor shape is (batch_size, num_image_tokens, dim),
-        because the bidirectional transformer first will embed each token to dim dimension,
-        and then pass to n_layers of encoders consist of Multi-Head Attention and MLP.
-        # of head set 16
-        Total d_k , d_v set to 768
-        d_k , d_v for one head will be 768//16.
-        """
-        raise Exception("TODO1!")
+        batch_size = x.size(0)
+
+        Q = self.q_linear(x)
+        K = self.k_linear(x)
+        V = self.v_linear(x)
+
+        Q = Q.view(batch_size, -1, self.num_heads, self.d_q).transpose(1, 2)
+        K = K.view(batch_size, -1, self.num_heads, self.d_k).transpose(1, 2)
+        V = V.view(batch_size, -1, self.num_heads, self.d_v).transpose(1, 2)
+
+        scores = torch.matmul(Q, K.transpose(-2, -1)) / math.sqrt(self.d_k)
+
+        attn_weights = torch.softmax(scores, dim=-1)
+        attn_weights = self.attn_drop(attn_weights)
+
+        out = torch.matmul(attn_weights, V)
+        out = out.transpose(1, 2).contiguous().view(batch_size, -1, self.dim)
+        out = self.out_linear(out)
+
+        return out
 
 
 class MLP(nn.Sequential):

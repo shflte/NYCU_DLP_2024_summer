@@ -1,9 +1,9 @@
+import os
+import torch
 from torch.utils.data import Dataset as torchData
 from glob import glob
 from torchvision import transforms
 from torchvision.datasets.folder import default_loader as imgloader
-import os
-import torch.nn as nn
 
 
 class LoadTrainData(torchData):
@@ -100,3 +100,16 @@ class LoadMaskData(torchData):
     def __getitem__(self, index):
         path = self.folder[index]
         return self.transform(imgloader(path))
+
+
+def mask_image(z_indices, mask_token_id, mask_rate):
+    masked_z_indices = z_indices.clone()
+
+    num_tokens = z_indices.shape[1]
+    num_masked = int(mask_rate * num_tokens)
+
+    for i in range(z_indices.shape[0]):
+        masked_indices = torch.randperm(num_tokens)[:num_masked]
+        masked_z_indices[i, masked_indices] = mask_token_id
+
+    return masked_z_indices

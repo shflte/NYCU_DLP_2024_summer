@@ -11,3 +11,4 @@ saved_models/
 predictions/
 *.csv
 permanent/
+*.pt
