@@ -72,6 +72,9 @@ class TrainTransformer:
 
                 logits = self.model.transformer(masked_z_indices)
 
+                if not mask.any():
+                    continue
+
                 loss = F.cross_entropy(logits[mask], z_indices[mask])
                 running_loss += loss.item()
 
