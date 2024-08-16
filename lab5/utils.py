@@ -1,5 +1,6 @@
 import os
 import torch
+import matplotlib.pyplot as plt
 from torch.utils.data import Dataset as torchData
 from glob import glob
 from torchvision import transforms
@@ -108,8 +109,29 @@ def mask_image(z_indices, mask_token_id, mask_rate):
     num_tokens = z_indices.shape[1]
     num_masked = int(mask_rate * num_tokens)
 
-    for i in range(z_indices.shape[0]):
+    batch_size = z_indices.shape[0]
+    for i in range(batch_size):
         masked_indices = torch.randperm(num_tokens)[:num_masked]
         masked_z_indices[i, masked_indices] = mask_token_id
 
     return masked_z_indices
+
+
+def plot_loss(loss, topic):
+    plt.figure(figsize=(10, 5))
+    plt.plot(loss)
+    plt.title(f"{topic} Loss")
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss")
+    plt.savefig(f"{topic}_loss.png")
+    plt.close()
+
+
+def plot_accuracy(acc, topic):
+    plt.figure(figsize=(10, 5))
+    plt.plot(acc)
+    plt.title(f"{topic} Accuracy")
+    plt.xlabel("Epoch")
+    plt.ylabel("Accuracy")
+    plt.savefig(f"{topic}_accuracy.png")
+    plt.close()

@@ -5,7 +5,7 @@ import argparse
 import torch
 import torch.nn.functional as F
 from models import MaskGit as VQGANTransformer
-from utils import LoadTrainData, mask_image
+from utils import LoadTrainData, mask_image, plot_loss, plot_accuracy
 import yaml
 from torch.utils.data import DataLoader
 
@@ -28,6 +28,8 @@ class TrainTransformer:
     def train_one_epoch(self, epoch, train_loader):
         self.model.train()
         running_loss = 0.0
+        correct_predictions = 0
+        total_predictions = 0
         for data in tqdm(train_loader, desc=f"Training Epoch {epoch}"):
             inputs = data.to(self.args.device)
 
@@ -49,14 +51,22 @@ class TrainTransformer:
             self.optim.zero_grad()
             loss.backward()
             self.optim.step()
-
             running_loss += loss.item()
 
-        return running_loss / len(train_loader)
+            _, predicted = torch.max(logits[mask], 1)
+            correct_predictions += (predicted == z_indices[mask]).sum().item()
+            total_predictions += mask.sum().item()
+
+        accuracy = (
+            correct_predictions / total_predictions if total_predictions > 0 else 0.0
+        )
+        return running_loss / len(train_loader), accuracy
 
     def eval_one_epoch(self, epoch, val_loader):
         self.model.eval()
         running_loss = 0.0
+        correct_predictions = 0
+        total_predictions = 0
         with torch.no_grad():
             for data in tqdm(val_loader, desc=f"Validation Epoch {epoch}"):
                 inputs = data.to(self.args.device)
@@ -78,11 +88,18 @@ class TrainTransformer:
                 loss = F.cross_entropy(logits[mask], z_indices[mask])
                 running_loss += loss.item()
 
-        return running_loss / len(val_loader)
+                _, predicted = torch.max(logits[mask], 1)
+                correct_predictions += (predicted == z_indices[mask]).sum().item()
+                total_predictions += mask.sum().item()
+
+        accuracy = (
+            correct_predictions / total_predictions if total_predictions > 0 else 0.0
+        )
+        return running_loss / len(train_loader), accuracy
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(
-            self.model.parameters(), lr=self.args.learning_rate, betas=(0.9, 0.999)
+            self.model.parameters(), lr=self.args.learning_rate
         )
         scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5)
         return optimizer, scheduler
@@ -131,7 +148,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("--num_workers", type=int, default=4, help="Number of worker")
     parser.add_argument(
-        "--batch-size", type=int, default=10, help="Batch size for training."
+        "--batch-size", type=int, default=32, help="Batch size for training."
     )
     parser.add_argument(
         "--partial",
@@ -139,11 +156,6 @@ if __name__ == "__main__":
         default=1.0,
         help="Percentage of the dataset to use for training.",
     )
-    parser.add_argument(
-        "--accum-grad", type=int, default=10, help="Number for gradient accumulation."
-    )
-
-    # you can modify the hyperparameters
     parser.add_argument(
         "--epochs", type=int, default=30, help="Number of epochs to train."
     )
@@ -159,7 +171,9 @@ if __name__ == "__main__":
         default=1,
         help="Save CKPT per ** epochs(default: 1)",
     )
-    parser.add_argument("--learning-rate", type=float, default=0, help="Learning rate.")
+    parser.add_argument(
+        "--learning-rate", type=float, default=0.01, help="Learning rate."
+    )
     parser.add_argument(
         "--MaskGitConfig",
         type=str,
@@ -199,15 +213,32 @@ if __name__ == "__main__":
         shuffle=False,
     )
 
+    train_loss_list = []
+    train_acc_list = []
+    val_loss_list = []
+    val_acc_list = []
     for epoch in range(args.start_from_epoch + 1, args.epochs + 1):
-        train_loss = train_transformer.train_one_epoch(epoch, train_loader)
-        print(f"Epoch {epoch}: Training Loss: {train_loss:.4f}")
+        train_loss, train_acc = train_transformer.train_one_epoch(epoch, train_loader)
+        print(
+            f"Epoch {epoch}: Training Loss: {train_loss:.4f}, Training Accuracy: {train_acc:.4f}"
+        )
+        train_loss_list.append(train_loss)
+        train_acc_list.append(train_acc)
 
         if epoch % args.val_per_epoch == 0:
-            val_loss = train_transformer.eval_one_epoch(epoch, val_loader)
-            print(f"Epoch {epoch}: Validation Loss: {val_loss:.4f}")
+            val_loss, val_acc = train_transformer.eval_one_epoch(epoch, val_loader)
+            print(
+                f"Epoch {epoch}: Validation Loss: {val_loss:.4f}, Validation Accuracy: {val_acc:.4f}"
+            )
+            val_loss_list.append(val_loss)
+            val_acc_list.append(val_acc)
 
         train_transformer.scheduler.step()
 
         if epoch % args.save_per_epoch == 0:
             train_transformer.save_checkpoint(epoch)
+
+    plot_loss(train_loss_list, "Training")
+    plot_accuracy(train_acc_list, "Training")
+    plot_loss(val_loss_list, "Validation")
+    plot_accuracy(val_acc_list, "Validation")
