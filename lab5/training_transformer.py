@@ -182,13 +182,11 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
-    args.start_from_epoch = 0
     os.makedirs(args.checkpoint_path, exist_ok=True)
-    ckpt_files = os.listdir(args.checkpoint_path)
-    if ckpt_files:
-        ckpt_files.sort()
-        last_ckpt = ckpt_files[-1]
-        args.start_from_epoch = int(last_ckpt.split("_")[-1].split(".")[0])
+    pt_files = [f for f in os.listdir(args.checkpoint_path) if f.endswith(".pt")]
+    args.start_from_epoch = (
+        max([int(f.split("_")[2].split(".")[0]) for f in pt_files]) if pt_files else 0
+    )
 
     MaskGit_CONFIGS = yaml.safe_load(open(args.MaskGitConfig, "r"))
     train_transformer = TrainTransformer(args, MaskGit_CONFIGS)
@@ -237,6 +235,11 @@ if __name__ == "__main__":
 
         if epoch % args.save_per_epoch == 0:
             train_transformer.save_checkpoint(epoch)
+
+    torch.save(
+        train_transformer.model.transformer.state_dict(),
+        f"transformer_checkpoints/final_transformer.pt",
+    )
 
     plot_loss(train_loss_list, "Training")
     plot_accuracy(train_acc_list, "Training")
