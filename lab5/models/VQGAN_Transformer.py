@@ -19,14 +19,13 @@ class MaskGit(nn.Module):
         self.gamma = self.gamma_func(configs["gamma_type"])
         self.transformer = BidirectionalTransformer(configs["Transformer_param"])
 
-    def load_transformer_checkpoint(self, load_ckpt_path):
-        self.transformer.load_state_dict(torch.load(load_ckpt_path))
-
     @staticmethod
     def load_vqgan(configs):
         cfg = yaml.safe_load(open(configs["VQ_config_path"], "r"))
         model = VQGAN(cfg["model_param"])
-        model.load_state_dict(torch.load(configs["VQ_CKPT_path"]), strict=True)
+        model.load_state_dict(
+            torch.load(configs["VQ_CKPT_path"], weights_only=True), strict=True
+        )
         model = model.eval()
         return model
 

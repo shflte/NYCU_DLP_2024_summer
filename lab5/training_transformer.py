@@ -18,10 +18,12 @@ class TrainTransformer:
         )
         self.optim, self.scheduler = self.configure_optimizers()
         self.prepare_training()
+        if args.start_from_epoch:
+            self.load_checkpoint(args.start_from_epoch)
 
     @staticmethod
     def prepare_training():
-        os.makedirs("transformer_checkpoints", exist_ok=True)
+        os.makedirs(args.checkpoint_path, exist_ok=True)
 
     def train_one_epoch(self, epoch, train_loader):
         self.model.train()
@@ -33,12 +35,17 @@ class TrainTransformer:
 
             mask_ratio = np.random.uniform(0, 1)
             mask_rate = self.model.gamma(mask_ratio)
-            masked_z_indices = mask_image(z_indices, self.model.mask_token_id, mask_rate)
+            masked_z_indices = mask_image(
+                z_indices, self.model.mask_token_id, mask_rate
+            )
+            mask = masked_z_indices == self.model.mask_token_id
 
             logits = self.model.transformer(masked_z_indices)
 
-            loss = F.cross_entropy(logits.view(-1, logits.size(-1)), z_indices.view(-1))
+            if not mask.any():
+                continue
 
+            loss = F.cross_entropy(logits[mask], z_indices[mask])
             self.optim.zero_grad()
             loss.backward()
             self.optim.step()
@@ -58,12 +65,14 @@ class TrainTransformer:
 
                 mask_ratio = np.random.uniform(0, 1)
                 mask_rate = self.model.gamma(mask_ratio)
-
-                masked_z_indices = mask_image(z_indices, self.model.mask_token_id, mask_rate)
+                masked_z_indices = mask_image(
+                    z_indices, self.model.mask_token_id, mask_rate
+                )
+                mask = masked_z_indices == self.model.mask_token_id
 
                 logits = self.model.transformer(masked_z_indices)
 
-                loss = F.cross_entropy(logits.view(-1, logits.size(-1)), z_indices.view(-1))
+                loss = F.cross_entropy(logits[mask], z_indices[mask])
                 running_loss += loss.item()
 
         return running_loss / len(val_loader)
@@ -74,6 +83,24 @@ class TrainTransformer:
         )
         scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5)
         return optimizer, scheduler
+
+    def save_checkpoint(self, epoch):
+        torch.save(
+            {
+                "epoch": epoch,
+                "model_state_dict": self.model.transformer.state_dict(),
+                "optimizer_state_dict": self.optim.state_dict(),
+                "scheduler_state_dict": self.scheduler.state_dict(),
+            },
+            f"transformer_checkpoints/ckpt_epoch_{epoch}.pt",
+        )
+
+    def load_checkpoint(self, epoch):
+        chpt_path = f"transformer_checkpoints/ckpt_epoch_{epoch}.pt"
+        ckpt = torch.load(chpt_path, weights_only=True)
+        self.model.transformer.load_state_dict(ckpt["model_state_dict"])
+        self.optim.load_state_dict(ckpt["optimizer_state_dict"])
+        self.scheduler.load_state_dict(ckpt["scheduler_state_dict"])
 
 
 if __name__ == "__main__":
@@ -93,7 +120,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--checkpoint-path",
         type=str,
-        default="saved_models/checkpoints/last_ckpt.pt",
+        default="transformer_checkpoints",
         help="Path to checkpoint.",
     )
     parser.add_argument(
@@ -115,22 +142,21 @@ if __name__ == "__main__":
 
     # you can modify the hyperparameters
     parser.add_argument(
-        "--epochs", type=int, default=5, help="Number of epochs to train."
+        "--epochs", type=int, default=30, help="Number of epochs to train."
+    )
+    parser.add_argument(
+        "--val-per-epoch",
+        type=int,
+        default=5,
+        help="Validation per ** epochs(default: 5)",
     )
     parser.add_argument(
         "--save-per-epoch",
         type=int,
         default=1,
-        help="Save CKPT per ** epochs(defcault: 1)",
-    )
-    parser.add_argument(
-        "--start-from-epoch", type=int, default=0, help="Number of epochs to train."
-    )
-    parser.add_argument(
-        "--ckpt-interval", type=int, default=0, help="Number of epochs to train."
+        help="Save CKPT per ** epochs(default: 1)",
     )
     parser.add_argument("--learning-rate", type=float, default=0, help="Learning rate.")
-
     parser.add_argument(
         "--MaskGitConfig",
         type=str,
@@ -139,6 +165,13 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
+    args.start_from_epoch = 0
+    os.makedirs(args.checkpoint_path, exist_ok=True)
+    ckpt_files = os.listdir(args.checkpoint_path)
+    if ckpt_files:
+        ckpt_files.sort()
+        last_ckpt = ckpt_files[-1]
+        args.start_from_epoch = int(last_ckpt.split("_")[-1].split(".")[0])
 
     MaskGit_CONFIGS = yaml.safe_load(open(args.MaskGitConfig, "r"))
     train_transformer = TrainTransformer(args, MaskGit_CONFIGS)
@@ -165,16 +198,13 @@ if __name__ == "__main__":
 
     for epoch in range(args.start_from_epoch + 1, args.epochs + 1):
         train_loss = train_transformer.train_one_epoch(epoch, train_loader)
-        val_loss = train_transformer.eval_one_epoch(epoch, val_loader)
+        print(f"Epoch {epoch}: Training Loss: {train_loss:.4f}")
 
-        print(
-            f"Epoch {epoch}: Training Loss: {train_loss:.4f}, Validation Loss: {val_loss:.4f}"
-        )
+        if epoch % args.val_per_epoch == 0:
+            val_loss = train_transformer.eval_one_epoch(epoch, val_loader)
+            print(f"Epoch {epoch}: Validation Loss: {val_loss:.4f}")
 
         train_transformer.scheduler.step()
 
         if epoch % args.save_per_epoch == 0:
-            torch.save(
-                train_transformer.model.state_dict(),
-                f"transformer_checkpoints/ckpt_epoch_{epoch}.pt",
-            )
+            train_transformer.save_checkpoint(epoch)
