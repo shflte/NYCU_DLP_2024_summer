@@ -148,7 +148,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("--num_workers", type=int, default=4, help="Number of worker")
     parser.add_argument(
-        "--batch-size", type=int, default=32, help="Batch size for training."
+        "--batch-size", type=int, default=24, help="Batch size for training."
     )
     parser.add_argument(
         "--partial",
@@ -172,7 +172,7 @@ if __name__ == "__main__":
         help="Save CKPT per ** epochs(default: 1)",
     )
     parser.add_argument(
-        "--learning-rate", type=float, default=0.01, help="Learning rate."
+        "--learning-rate", type=float, default=0.001, help="Learning rate."
     )
     parser.add_argument(
         "--MaskGitConfig",
