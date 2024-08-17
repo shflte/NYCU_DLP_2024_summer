@@ -4,7 +4,7 @@ import math
 
 
 class MultiHeadAttention(nn.Module):
-    def __init__(self, dim=768, num_heads=16, attn_drop=0.1):
+    def __init__(self, dim=768, num_heads=16):
         super(MultiHeadAttention, self).__init__()
 
         self.num_heads = num_heads
@@ -18,8 +18,6 @@ class MultiHeadAttention(nn.Module):
         self.v_linear = nn.Linear(dim, dim)
 
         self.out_linear = nn.Linear(dim, dim)
-
-        self.attn_drop = nn.Dropout(attn_drop)
 
     def forward(self, x):
         batch_size = x.size(0)
@@ -35,7 +33,6 @@ class MultiHeadAttention(nn.Module):
         scores = torch.matmul(Q, K.transpose(-2, -1)) / math.sqrt(self.d_k)
 
         attn_weights = torch.softmax(scores, dim=-1)
-        attn_weights = self.attn_drop(attn_weights)
 
         out = torch.matmul(attn_weights, V)
         out = out.transpose(1, 2).contiguous().view(batch_size, -1, self.dim)
