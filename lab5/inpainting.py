@@ -32,7 +32,6 @@ class MaskGIT:
         os.makedirs("mask_scheduling", exist_ok=True)
         os.makedirs("imga", exist_ok=True)
 
-    ##TODO3 step1-1: total iteration decoding
     # mask_b: iteration decoding initial mask, where mask_b is true means mask
     def inpainting(self, image, mask_b, i):  # MakGIT inference
         maska = torch.zeros(
@@ -48,21 +47,19 @@ class MaskGIT:
 
         self.model.eval()
         with torch.no_grad():
-            z_indices = None  # z_indices: masked tokens (b,16*16)
+            z_indices = None  # z_indices: masked tokens (b, 16 * 16)
             mask_num = mask_b.sum()  # total number of mask token
             z_indices_predict = z_indices
-            mask_bc = mask_b
+            mask_bc = mask_b.clone().to(device=self.device)
             mask_b = mask_b.to(device=self.device)
-            mask_bc = mask_bc.to(device=self.device)
 
-            raise Exception("TODO3 step1-1!")
             ratio = 0
             # iterative decoding for loop design
             # Hint: it's better to save original mask and the updated mask by scheduling separately
             for step in range(self.total_iter):
                 if step == self.sweet_spot:
                     break
-                ratio = None  # this should be updated
+                ratio = step / self.total_iter
 
                 z_indices_predict, mask_bc = self.model.inpainting()
 
@@ -79,7 +76,7 @@ class MaskGIT:
                 dec_img_ori = (decoded_img[0] * std) + mean
                 imga[step + 1] = dec_img_ori  # get decoded image
 
-            ##decoded image of the sweet spot only, the test_results folder path will be the --predicted-path for fid score calculation
+            # decoded image of the sweet spot only, the test_results folder path will be the --predicted-path for fid score calculation
             vutils.save_image(
                 dec_img_ori, os.path.join("test_results", f"image_{i:03d}.png"), nrow=1
             )
@@ -118,8 +115,8 @@ class MaskedImage:
         resized_mask = torch.nn.functional.avg_pool2d(
             downsampled1, kernel_size=2, stride=2
         )
-        resized_mask[resized_mask != 1] = 0  # 1,3,16*16   check use
-        mask_tokens = (resized_mask[0][0] // 1).flatten()  ##[256] =16*16 token
+        resized_mask[resized_mask != 1] = 0  # 1, 3, 16 * 16 check use
+        mask_tokens = (resized_mask[0][0] // 1).flatten()  # [256] = n 16 * 16 token
         mask_tokens = mask_tokens.unsqueeze(0)
         mask_b = torch.zeros(mask_tokens.shape, dtype=torch.bool, device=self.device)
         mask_b |= mask_tokens == 0  # true means mask
@@ -149,36 +146,41 @@ if __name__ == "__main__":
         help="Configurations for MaskGIT",
     )
 
-    # TODO3 step1-2: modify the path, MVTM parameters
     parser.add_argument(
-        "--load-transformer-ckpt-path", type=str, default="", help="load ckpt"
+        "--load-transformer-ckpt-path",
+        type=str,
+        default="final_transformer.pt",
+        help="load ckpt",
     )
 
     # dataset path
     parser.add_argument(
         "--test-maskedimage-path",
         type=str,
-        default="./cat_face/masked_image",
+        default="dataset/masked_image",
         help="Path to testing image dataset.",
     )
     parser.add_argument(
         "--test-mask-path",
         type=str,
-        default="./mask64",
+        default="dataset/mask64",
         help="Path to testing mask dataset.",
     )
     # MVTM parameter
     parser.add_argument(
         "--sweet-spot",
         type=int,
-        default=0,
+        default=10,
         help="sweet spot: the best step in total iteration",
     )
     parser.add_argument(
-        "--total-iter", type=int, default=0, help="total step for mask scheduling"
+        "--total-iter", type=int, default=10, help="total step for mask scheduling"
     )
     parser.add_argument(
-        "--mask-func", type=str, default="0", help="mask scheduling function"
+        "--mask-func",
+        type=str,
+        default="cosine",
+        help="mask scheduling function (linear, cosine, square)",
     )
 
     args = parser.parse_args()
