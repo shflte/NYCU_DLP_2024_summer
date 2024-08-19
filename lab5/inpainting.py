@@ -1,16 +1,13 @@
-import pandas as pd
-import numpy as np
-from PIL import Image
 import torch
-from torchvision import transforms
 import argparse
+# import tqdm
+from tqdm import tqdm
 from utils import LoadTestData, LoadMaskData, set_random_seed
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader
 from torchvision import utils as vutils
 import os
 from models import MaskGit as VQGANTransformer
 import yaml
-import torch.nn.functional as F
 
 
 class MaskGIT:
@@ -73,7 +70,6 @@ class MaskGIT:
                 z_q = z_q.permute(0, 3, 1, 2)
                 decoded_img = self.model.vqgan.decode(z_q)
                 dec_img_ori = (decoded_img[0] * std) + mean
-                breakpoint()
                 imga[step] = dec_img_ori  # get decoded image
 
             # decoded image of the sweet spot only, the test_results folder path will be the --predicted-path for fid score calculation
@@ -170,11 +166,11 @@ if __name__ == "__main__":
     parser.add_argument(
         "--sweet-spot",
         type=int,
-        default=10,
+        default=20,
         help="sweet spot: the best step in total iteration",
     )
     parser.add_argument(
-        "--total-iter", type=int, default=10, help="total step for mask scheduling"
+        "--total-iter", type=int, default=20, help="total step for mask scheduling"
     )
     parser.add_argument(
         "--mask-func",
@@ -197,8 +193,7 @@ if __name__ == "__main__":
     maskgit = MaskGIT(args, MaskGit_CONFIGS)
 
     i = 0
-    for image, mask in zip(t.mi_ori, t.mask_ori):
-        print(f"Processing image {i}")
+    for image, mask in tqdm(zip(t.mi_ori, t.mask_ori), total=len(t.mi_ori)):
         image = image.to(device=args.device)
         mask = mask.to(device=args.device)
         mask_b = t.get_mask_latent(mask)

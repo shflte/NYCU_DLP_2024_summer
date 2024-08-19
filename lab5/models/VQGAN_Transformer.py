@@ -84,8 +84,13 @@ class MaskGit(nn.Module):
         z_indices_predict = torch.argmax(confidence, dim=-1)
         z_indices_predict[~mask_b] = z_indices[~mask_b]
 
+        # If the prediction is special token, replace it with 0 and set confidence to -inf
+        z_indices_predict[z_indices_predict == self.mask_token_id] = 0
+
         # Get next mask
         confidence, _ = torch.max(confidence, dim=-1)
+        # Replace the mask token with -inf if the prediction is mask token
+        confidence[z_indices_predict == self.mask_token_id] = -float("inf")
         confidence[~mask_b] = -float("inf")
         tokens_to_unmask = mask_b.sum() - math.floor(self.gamma(ratio) * mask_num)
         _, indices = torch.topk(confidence, tokens_to_unmask, dim=-1)
