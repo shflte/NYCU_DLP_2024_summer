@@ -4,7 +4,7 @@ from PIL import Image
 import torch
 from torchvision import transforms
 import argparse
-from utils import LoadTestData, LoadMaskData
+from utils import LoadTestData, LoadMaskData, set_random_seed
 from torch.utils.data import Dataset, DataLoader
 from torchvision import utils as vutils
 import os
@@ -73,6 +73,7 @@ class MaskGIT:
                 z_q = z_q.permute(0, 3, 1, 2)
                 decoded_img = self.model.vqgan.decode(z_q)
                 dec_img_ori = (decoded_img[0] * std) + mean
+                breakpoint()
                 imga[step] = dec_img_ori  # get decoded image
 
             # decoded image of the sweet spot only, the test_results folder path will be the --predicted-path for fid score calculation
@@ -181,8 +182,15 @@ if __name__ == "__main__":
         default="cosine",
         help="mask scheduling function (linear, cosine, square)",
     )
+    parser.add_argument(
+        "--random-seed",
+        type=int,
+        default=910615,
+        help="Random seed for reproducibility.",
+    )
 
     args = parser.parse_args()
+    set_random_seed(args.random_seed)
 
     t = MaskedImage(args)
     MaskGit_CONFIGS = yaml.safe_load(open(args.MaskGitConfig, "r"))

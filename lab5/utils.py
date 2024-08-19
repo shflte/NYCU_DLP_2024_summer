@@ -1,4 +1,6 @@
 import os
+import random
+import numpy as np
 import torch
 import matplotlib.pyplot as plt
 from torch.utils.data import Dataset as torchData
@@ -135,3 +137,14 @@ def plot_accuracy(acc, topic):
     plt.ylabel("Accuracy")
     plt.savefig(f"{topic}_accuracy.png")
     plt.close()
+
+
+def set_random_seed(seed):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False

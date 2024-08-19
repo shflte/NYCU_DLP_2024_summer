@@ -5,7 +5,7 @@ import argparse
 import torch
 import torch.nn.functional as F
 from models import MaskGit as VQGANTransformer
-from utils import LoadTrainData, mask_image, plot_loss, plot_accuracy
+from utils import LoadTrainData, mask_image, plot_loss, plot_accuracy, set_random_seed
 import yaml
 from torch.utils.data import DataLoader
 
@@ -112,7 +112,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--partial",
         type=float,
-        default=0.05,
+        default=1.0,
         help="Percentage of the dataset to use for training.",
     )
     parser.add_argument(
@@ -139,8 +139,15 @@ if __name__ == "__main__":
         default="config/MaskGit.yml",
         help="Configurations for TransformerVQGAN",
     )
+    parser.add_argument(
+        "--random-seed",
+        type=int,
+        default=910615,
+        help="Random seed for reproducibility.",
+    )
 
     args = parser.parse_args()
+    set_random_seed(args.random_seed)
     os.makedirs(args.checkpoint_path, exist_ok=True)
     pt_files = [f for f in os.listdir(args.checkpoint_path) if f.endswith(".pt")]
     args.start_from_epoch = (
