@@ -38,7 +38,7 @@ class MaskGIT:
             self.total_iter, 3, 16, 16
         )  # save all iterations of masks in latent domain
         imga = torch.zeros(
-            self.total_iter + 1, 3, 64, 64
+            self.total_iter, 3, 64, 64
         )  # save all iterations of decoded images
         mean = torch.tensor([0.4868, 0.4341, 0.3844], device=self.device).view(3, 1, 1)
         std = torch.tensor([0.2620, 0.2527, 0.2543], device=self.device).view(3, 1, 1)
@@ -54,27 +54,26 @@ class MaskGIT:
             mask_b = mask_b.to(device=self.device)
 
             ratio = 0
-            # iterative decoding for loop design
-            # Hint: it's better to save original mask and the updated mask by scheduling separately
             for step in range(self.total_iter):
                 if step == self.sweet_spot:
                     break
                 ratio = step / self.total_iter
 
-                z_indices_predict, mask_bc = self.model.inpainting()
+                z_indices_predict, mask_bc = self.model.inpainting(
+                    image, mask_bc, ratio, mask_num
+                )
 
-                # static method yon can modify or not, make sure your visualization results are correct
                 mask_i = mask_bc.view(1, 16, 16)
                 mask_image = torch.ones(3, 16, 16)
                 indices = torch.nonzero(mask_i, as_tuple=False)  # label mask true
-                mask_image[:, indices[:, 1], indices[:, 2]] = 0  # 3,16,16
+                mask_image[:, indices[:, 1], indices[:, 2]] = 0  # 3, 16, 16
                 maska[step] = mask_image
                 shape = (1, 16, 16, 256)
                 z_q = self.model.vqgan.codebook.embedding(z_indices_predict).view(shape)
                 z_q = z_q.permute(0, 3, 1, 2)
                 decoded_img = self.model.vqgan.decode(z_q)
                 dec_img_ori = (decoded_img[0] * std) + mean
-                imga[step + 1] = dec_img_ori  # get decoded image
+                imga[step] = dec_img_ori  # get decoded image
 
             # decoded image of the sweet spot only, the test_results folder path will be the --predicted-path for fid score calculation
             vutils.save_image(
@@ -191,6 +190,7 @@ if __name__ == "__main__":
 
     i = 0
     for image, mask in zip(t.mi_ori, t.mask_ori):
+        print(f"Processing image {i}")
         image = image.to(device=args.device)
         mask = mask.to(device=args.device)
         mask_b = t.get_mask_latent(mask)

@@ -19,6 +19,9 @@ class MaskGit(nn.Module):
         self.gamma = self.gamma_func(configs["gamma_type"])
         self.transformer = BidirectionalTransformer(configs["Transformer_param"])
 
+    def load_transformer_checkpoint(self, load_ckpt_path):
+        self.transformer.load_state_dict(torch.load(load_ckpt_path, weights_only=True))
+
     @staticmethod
     def load_vqgan(configs):
         cfg = yaml.safe_load(open(configs["VQ_config_path"], "r"))
@@ -65,6 +68,31 @@ class MaskGit(nn.Module):
         logits = self.transformer(masked_z_indices)
 
         return logits, z_indices
+
+    @torch.no_grad()
+    def inpainting(self, image, mask_b, ratio, mask_num):
+        _, z_indices = self.encode_to_z(image)
+        logits = self.transformer(z_indices)
+        z_indices_predict_prob = torch.nn.functional.softmax(logits, dim=-1)
+
+        # Add temperature annealing gumbel noise to the confidence
+        g = -torch.log(-torch.log(torch.rand_like(z_indices_predict_prob)))
+        temperature = self.choice_temperature * (1 - ratio)
+        confidence = z_indices_predict_prob + temperature * g
+
+        # Predict the tokens and replace the masked tokens
+        z_indices_predict = torch.argmax(confidence, dim=-1)
+        z_indices_predict[~mask_b] = z_indices[~mask_b]
+
+        # Get next mask
+        confidence, _ = torch.max(confidence, dim=-1)
+        confidence[~mask_b] = -float("inf")
+        tokens_to_unmask = mask_b.sum() - math.floor(self.gamma(ratio) * mask_num)
+        _, indices = torch.topk(confidence, tokens_to_unmask, dim=-1)
+        if indices.nelement() > 0:
+            mask_b[0, indices[0]] = False
+
+        return z_indices_predict, mask_b
 
 
 __MODEL_TYPE__ = {"MaskGit": MaskGit}
