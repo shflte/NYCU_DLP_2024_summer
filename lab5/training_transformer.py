@@ -28,74 +28,33 @@ class TrainTransformer:
     def train_one_epoch(self, epoch, train_loader):
         self.model.train()
         running_loss = 0.0
-        correct_predictions = 0
-        total_predictions = 0
         for data in tqdm(train_loader, desc=f"Training Epoch {epoch}"):
             inputs = data.to(self.args.device)
 
-            _, z_indices = self.model.encode_to_z(inputs)
+            logits, z_indices = self.model(inputs)
+            loss = F.cross_entropy(logits.view(-1, logits.size(-1)), z_indices.view(-1))
 
-            mask_ratio = np.random.uniform(0, 1)
-            mask_rate = self.model.gamma(mask_ratio)
-            masked_z_indices = mask_image(
-                z_indices, self.model.mask_token_id, mask_rate
-            )
-            mask = masked_z_indices == self.model.mask_token_id
-
-            logits = self.model.transformer(masked_z_indices)
-
-            if not mask.any():
-                continue
-
-            loss = F.cross_entropy(logits[mask], z_indices[mask])
             self.optim.zero_grad()
             loss.backward()
             self.optim.step()
             running_loss += loss.item()
 
-            _, predicted = torch.max(logits[mask], 1)
-            correct_predictions += (predicted == z_indices[mask]).sum().item()
-            total_predictions += mask.sum().item()
-
-        accuracy = (
-            correct_predictions / total_predictions if total_predictions > 0 else 0.0
-        )
-        return running_loss / len(train_loader), accuracy
+        return running_loss / len(train_loader)
 
     def eval_one_epoch(self, epoch, val_loader):
         self.model.eval()
         running_loss = 0.0
-        correct_predictions = 0
-        total_predictions = 0
         with torch.no_grad():
             for data in tqdm(val_loader, desc=f"Validation Epoch {epoch}"):
                 inputs = data.to(self.args.device)
 
-                _, z_indices = self.model.encode_to_z(inputs)
-
-                mask_ratio = np.random.uniform(0, 1)
-                mask_rate = self.model.gamma(mask_ratio)
-                masked_z_indices = mask_image(
-                    z_indices, self.model.mask_token_id, mask_rate
+                logits, z_indices = self.model(inputs)
+                loss = F.cross_entropy(
+                    logits.view(-1, logits.size(-1)), z_indices.view(-1)
                 )
-                mask = masked_z_indices == self.model.mask_token_id
-
-                logits = self.model.transformer(masked_z_indices)
-
-                if not mask.any():
-                    continue
-
-                loss = F.cross_entropy(logits[mask], z_indices[mask])
                 running_loss += loss.item()
 
-                _, predicted = torch.max(logits[mask], 1)
-                correct_predictions += (predicted == z_indices[mask]).sum().item()
-                total_predictions += mask.sum().item()
-
-        accuracy = (
-            correct_predictions / total_predictions if total_predictions > 0 else 0.0
-        )
-        return running_loss / len(train_loader), accuracy
+        return running_loss / len(val_loader)
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(
@@ -153,11 +112,11 @@ if __name__ == "__main__":
     parser.add_argument(
         "--partial",
         type=float,
-        default=1.0,
+        default=0.05,
         help="Percentage of the dataset to use for training.",
     )
     parser.add_argument(
-        "--epochs", type=int, default=30, help="Number of epochs to train."
+        "--epochs", type=int, default=15, help="Number of epochs to train."
     )
     parser.add_argument(
         "--val-per-epoch",
@@ -172,7 +131,7 @@ if __name__ == "__main__":
         help="Save CKPT per ** epochs(default: 1)",
     )
     parser.add_argument(
-        "--learning-rate", type=float, default=0.001, help="Learning rate."
+        "--learning-rate", type=float, default=0.0001, help="Learning rate."
     )
     parser.add_argument(
         "--MaskGitConfig",
@@ -185,7 +144,7 @@ if __name__ == "__main__":
     os.makedirs(args.checkpoint_path, exist_ok=True)
     pt_files = [f for f in os.listdir(args.checkpoint_path) if f.endswith(".pt")]
     args.start_from_epoch = (
-        max([int(f.split("_")[2].split(".")[0]) for f in pt_files]) if pt_files else 0
+        max([int(f.split("_")[-1].split(".")[0]) for f in pt_files]) if pt_files else 0
     )
 
     MaskGit_CONFIGS = yaml.safe_load(open(args.MaskGitConfig, "r"))
@@ -216,20 +175,14 @@ if __name__ == "__main__":
     val_loss_list = []
     val_acc_list = []
     for epoch in range(args.start_from_epoch + 1, args.epochs + 1):
-        train_loss, train_acc = train_transformer.train_one_epoch(epoch, train_loader)
-        print(
-            f"Epoch {epoch}: Training Loss: {train_loss:.4f}, Training Accuracy: {train_acc:.4f}"
-        )
+        train_loss = train_transformer.train_one_epoch(epoch, train_loader)
+        print(f"Epoch {epoch}: Training Loss: {train_loss:.4f}")
         train_loss_list.append(train_loss)
-        train_acc_list.append(train_acc)
 
         if epoch % args.val_per_epoch == 0:
-            val_loss, val_acc = train_transformer.eval_one_epoch(epoch, val_loader)
-            print(
-                f"Epoch {epoch}: Validation Loss: {val_loss:.4f}, Validation Accuracy: {val_acc:.4f}"
-            )
+            val_loss = train_transformer.eval_one_epoch(epoch, val_loader)
+            print(f"Epoch {epoch}: Validation Loss: {val_loss:.4f}")
             val_loss_list.append(val_loss)
-            val_acc_list.append(val_acc)
 
         train_transformer.scheduler.step()
 
@@ -238,10 +191,8 @@ if __name__ == "__main__":
 
     torch.save(
         train_transformer.model.transformer.state_dict(),
-        f"transformer_checkpoints/final_transformer.pt",
+        "final_transformer.pt",
     )
 
     plot_loss(train_loss_list, "Training")
-    plot_accuracy(train_acc_list, "Training")
     plot_loss(val_loss_list, "Validation")
-    plot_accuracy(val_acc_list, "Validation")

@@ -1,10 +1,10 @@
 import torch
 import torch.nn as nn
-import yaml
-import os
-import math
 import numpy as np
+import yaml
+import math
 from .VQGAN import VQGAN
+from utils import mask_image
 from .Transformer import BidirectionalTransformer
 
 
@@ -57,7 +57,12 @@ class MaskGit(nn.Module):
 
     def forward(self, x):
         _, z_indices = self.encode_to_z(x)
-        logits = self.transformer(z_indices)
+
+        mask_ratio = np.random.uniform(0, 1)
+        mask_rate = self.gamma(mask_ratio)
+        masked_z_indices = mask_image(z_indices, self.mask_token_id, mask_rate)
+
+        logits = self.transformer(masked_z_indices)
 
         return logits, z_indices
 
