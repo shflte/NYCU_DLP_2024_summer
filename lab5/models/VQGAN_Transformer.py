@@ -4,7 +4,7 @@ import numpy as np
 import yaml
 import math
 from .VQGAN import VQGAN
-from utils import mask_image
+from utils import mask_latent
 from .Transformer import BidirectionalTransformer
 
 
@@ -63,7 +63,7 @@ class MaskGit(nn.Module):
 
         mask_ratio = np.random.uniform(0, 1)
         mask_rate = self.gamma(mask_ratio)
-        masked_z_indices = mask_image(z_indices, self.mask_token_id, mask_rate)
+        masked_z_indices = mask_latent(z_indices, self.mask_token_id, mask_rate)
 
         logits = self.transformer(masked_z_indices)
 

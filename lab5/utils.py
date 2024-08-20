@@ -2,9 +2,7 @@ import os
 import random
 import numpy as np
 import torch
-import matplotlib.pyplot as plt
 from torch.utils.data import Dataset as torchData
-from glob import glob
 from torchvision import transforms
 from torchvision.datasets.folder import default_loader as imgloader
 
@@ -105,7 +103,7 @@ class LoadMaskData(torchData):
         return self.transform(imgloader(path))
 
 
-def mask_image(z_indices, mask_token_id, mask_rate):
+def mask_latent(z_indices, mask_token_id, mask_rate):
     masked_z_indices = z_indices.clone()
 
     num_tokens = z_indices.shape[1]
@@ -117,26 +115,6 @@ def mask_image(z_indices, mask_token_id, mask_rate):
         masked_z_indices[i, masked_indices] = mask_token_id
 
     return masked_z_indices
-
-
-def plot_loss(loss, topic):
-    plt.figure(figsize=(10, 5))
-    plt.plot(loss)
-    plt.title(f"{topic} Loss")
-    plt.xlabel("Epoch")
-    plt.ylabel("Loss")
-    plt.savefig(f"{topic}_loss.png")
-    plt.close()
-
-
-def plot_accuracy(acc, topic):
-    plt.figure(figsize=(10, 5))
-    plt.plot(acc)
-    plt.title(f"{topic} Accuracy")
-    plt.xlabel("Epoch")
-    plt.ylabel("Accuracy")
-    plt.savefig(f"{topic}_accuracy.png")
-    plt.close()
 
 
 def set_random_seed(seed):

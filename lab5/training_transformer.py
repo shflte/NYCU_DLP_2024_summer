@@ -5,7 +5,7 @@ import argparse
 import torch
 import torch.nn.functional as F
 from models import MaskGit as VQGANTransformer
-from utils import LoadTrainData, mask_image, plot_loss, plot_accuracy, set_random_seed
+from utils import LoadTrainData, set_random_seed
 import yaml
 from torch.utils.data import DataLoader
 
@@ -177,19 +177,13 @@ if __name__ == "__main__":
         shuffle=False,
     )
 
-    train_loss_list = []
-    train_acc_list = []
-    val_loss_list = []
-    val_acc_list = []
     for epoch in range(args.start_from_epoch + 1, args.epochs + 1):
         train_loss = train_transformer.train_one_epoch(epoch, train_loader)
         print(f"Epoch {epoch}: Training Loss: {train_loss:.4f}")
-        train_loss_list.append(train_loss)
 
         if epoch % args.val_per_epoch == 0:
             val_loss = train_transformer.eval_one_epoch(epoch, val_loader)
             print(f"Epoch {epoch}: Validation Loss: {val_loss:.4f}")
-            val_loss_list.append(val_loss)
 
         train_transformer.scheduler.step()
 
@@ -200,6 +194,3 @@ if __name__ == "__main__":
         train_transformer.model.transformer.state_dict(),
         "final_transformer.pt",
     )
-
-    plot_loss(train_loss_list, "Training")
-    plot_loss(val_loss_list, "Validation")
