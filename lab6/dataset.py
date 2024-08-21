@@ -45,9 +45,7 @@ class CLEVRDataset(Dataset):
                     transforms.Resize(72),
                     transforms.CenterCrop(64),
                     transforms.ToTensor(),
-                    transforms.Normalize(
-                        mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-                    ),
+                    transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),
                 ]
             )
         image = self.transform(image)
@@ -67,16 +65,21 @@ class CLEVRDatasetEval(Dataset):
             eval_json (str): Path to the eval.json file.
             objects_json (str): Path to the objects.json file.
         """
-        self.objects_dict = json.load(open(objects_json, "r"))
-        self.data_info = json.load(open(eval_json, "r"))
+        with open(objects_json, "r") as f:
+            self.objects_dict = json.load(f)
+        with open(eval_json, "r") as f:
+            self.data_info = json.load(f)
         self.vector_length = len(self.objects_dict)
+
+        self.labels = torch.zeros(
+            (len(self.data_info), self.vector_length), dtype=torch.float32
+        )
+        for idx, objects in enumerate(self.data_info):
+            one_hot_vector = objects_to_one_hot(objects, self.objects_dict)
+            self.labels[idx] = torch.tensor(one_hot_vector, dtype=torch.float32)
 
     def __len__(self):
         return len(self.data_info)
 
     def __getitem__(self, idx):
-        objects = self.data_info[idx]
-        one_hot_vector = objects_to_one_hot(objects, self.objects_dict)
-        label = torch.tensor(one_hot_vector, dtype=torch.float32)
-
-        return label
+        return self.labels[idx]
