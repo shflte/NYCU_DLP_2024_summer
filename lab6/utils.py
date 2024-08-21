@@ -33,3 +33,12 @@ def make_grid(images, size=64):
     for i, im in enumerate(images):
         output_im.paste(im.resize((size, size)), (i * size, 0))
     return output_im
+
+
+def show_losses(losses):
+    plt.figure(figsize=(10, 5))
+    plt.plot(losses, label="Training loss")
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss")
+    plt.legend()
+    plt.savefig(f"loss.png")
