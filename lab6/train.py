@@ -14,11 +14,13 @@ from models.conditional_unet import ClassConditionedUnet
 def train(config):
     # Dataset
     dataset = CLEVRDataset(
-        dataset_dir='dataset/',
-        train_json='train.json',
-        objects_json='objects.json',
+        dataset_dir=config["dataset_dir"],
+        train_json=config["train_json_path"],
+        objects_json=config["objects_json_path"],
     )
-    train_dataloader = DataLoader(dataset, batch_size=8, shuffle=True)
+    train_dataloader = DataLoader(
+        dataset, batch_size=config["batch_size"], shuffle=True
+    )
 
     # Model
     model = ClassConditionedUnet(num_classes=24)
