@@ -28,7 +28,9 @@ def train(config):
     model = model.cuda()
 
     # Noise scheduler
-    noise_scheduler = DDPMScheduler(num_train_timesteps=1000, beta_schedule='squaredcos_cap_v2')
+    noise_scheduler = DDPMScheduler(
+        num_train_timesteps=1000, beta_schedule="squaredcos_cap_v2"
+    )
 
     # Optimizer
     optimizer = torch.optim.Adam(model.parameters(), lr=config["learning_rate"])
@@ -62,8 +64,8 @@ def train(config):
             # Save loss value
             losses.append(loss.item())
 
-        avg_loss = sum(losses[-100:]) / 100
-        print(f'Finished epoch {epoch}. Average of the last 100 loss values: {avg_loss:.5f}')
+        avg_loss = sum(losses) / len(losses)
+        print(f"Finished epoch {epoch}. Loss: {avg_loss:.5f}")
 
     # Plot the loss values
     show_losses(losses)

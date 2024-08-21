@@ -29,10 +29,10 @@ def inference(config):
     )
 
     # Prepare to store results
-    save_timesteps = torch.linspace(0, 999, steps=11).long().tolist()  # timesteps to save images
-    denoise_images_list = [
-        [] for _ in range(len(eval_dataset))
-    ]
+    save_timesteps = (
+        torch.linspace(0, 999, steps=11).long().tolist()
+    )  # timesteps to save images
+    denoise_images_list = [[] for _ in range(len(eval_dataset))]
     final_results = []
 
     # Inference loop

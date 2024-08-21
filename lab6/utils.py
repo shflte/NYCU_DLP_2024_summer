@@ -20,13 +20,13 @@ def set_random_seed(seed):
 def show_losses(losses):
     plt.figure(figsize=(10, 5))
     plt.plot(losses, label="Training loss")
-    plt.xlabel("Epoch")
+    plt.xlabel("Batch")
     plt.ylabel("Loss")
     plt.legend()
     plt.savefig(f"loss.png")
 
 
-def show_denoising_grid(images, result_dir, normalize=True):
+def show_denoising_grid(images, result_path, normalize=True):
     """
     Display a grid of 11 images in a single row using matplotlib.
 
@@ -40,8 +40,7 @@ def show_denoising_grid(images, result_dir, normalize=True):
     plt.imshow(grid.permute(1, 2, 0).cpu().numpy())
     plt.title("Denoising Results")
     plt.axis("off")
-    os.makedirs(result_dir, exist_ok=True)
-    plt.savefig(os.path.join(result_dir, "denoising_results.png"))
+    plt.savefig(result_path)
 
 
 def show_test_results_grid(images, result_dir, normalize=True):
@@ -58,5 +57,4 @@ def show_test_results_grid(images, result_dir, normalize=True):
     plt.imshow(grid.permute(1, 2, 0).cpu().numpy())
     plt.title("Test Results")
     plt.axis("off")
-    os.makedirs(result_dir, exist_ok=True)
     plt.savefig(os.path.join(result_dir, "test_results.png"))

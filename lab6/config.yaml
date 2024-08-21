@@ -3,7 +3,9 @@ seed: 910615
 # Data parameters
 dataset_dir: "dataset"
 train_json_path: "train.json"
+eval_json_path: "test.json"
 objects_json_path: "objects.json"
+result_dir: "results"
 
 # Model parameters
 num_classes: 24
@@ -12,4 +14,6 @@ model_path: "model.pt"
 # Training parameters
 learning_rate: 0.001
 batch_size: 32
-epochs: 50
+epochs: 1
+
+image_size: 64
