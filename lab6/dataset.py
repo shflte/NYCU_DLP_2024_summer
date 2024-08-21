@@ -7,6 +7,14 @@ from PIL import Image
 import numpy as np
 
 
+def objects_to_one_hot(objects, objects_dict):
+    one_hot_vector = np.zeros(len(objects_dict))
+    for obj in objects:
+        obj_idx = objects_dict[obj]
+        one_hot_vector[obj_idx] = 1
+    return one_hot_vector
+
+
 class CLEVRDataset(Dataset):
     def __init__(self, dataset_dir, train_json, objects_json, transform=None):
         """
@@ -45,11 +53,30 @@ class CLEVRDataset(Dataset):
         image = self.transform(image)
 
         # Label
-        one_hot_vector = np.zeros(self.vector_length)
         objects = self.data_info[image_name]
-        for obj in objects:
-            obj_idx = self.objects_dict[obj]
-            one_hot_vector[obj_idx] = 1
+        one_hot_vector = objects_to_one_hot(objects, self.objects_dict)
         label = torch.tensor(one_hot_vector, dtype=torch.float32)
 
         return image, label
+
+
+class CLEVRDatasetEval(Dataset):
+    def __init__(self, eval_json, objects_json):
+        """
+        Args:
+            eval_json (str): Path to the eval.json file.
+            objects_json (str): Path to the objects.json file.
+        """
+        self.objects_dict = json.load(open(objects_json, "r"))
+        self.data_info = json.load(open(eval_json, "r"))
+        self.vector_length = len(self.objects_dict)
+
+    def __len__(self):
+        return len(self.data_info)
+
+    def __getitem__(self, idx):
+        objects = self.data_info[idx]
+        one_hot_vector = objects_to_one_hot(objects, self.objects_dict)
+        label = torch.tensor(one_hot_vector, dtype=torch.float32)
+
+        return label
