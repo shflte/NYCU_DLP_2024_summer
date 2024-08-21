@@ -14,6 +14,7 @@ model_path: "model.pt"
 # Training parameters
 learning_rate: 0.001
 batch_size: 32
-epochs: 1
+epochs: 5
 
 image_size: 64
+denoise_steps: 1000

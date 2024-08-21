@@ -37,8 +37,8 @@ transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
 class evaluation_model:
     def __init__(self):
         # modify the path to your own path
-        checkpoint = torch.load("./checkpoint.pth")
-        self.resnet18 = models.resnet18(pretrained=False)
+        checkpoint = torch.load("./checkpoint.pth", weights_only=True)
+        self.resnet18 = models.resnet18(weights=None)
         self.resnet18.fc = nn.Sequential(nn.Linear(512, 24), nn.Sigmoid())
         self.resnet18.load_state_dict(checkpoint["model"])
         self.resnet18 = self.resnet18.cuda()

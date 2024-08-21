@@ -4,7 +4,6 @@ import os
 from tqdm import tqdm
 from torch.utils.data import DataLoader
 import torchvision.utils as vutils
-from PIL import Image
 from diffusers import DDPMScheduler
 from dataset import CLEVRDatasetEval
 from models.conditional_unet import ClassConditionedUnet
