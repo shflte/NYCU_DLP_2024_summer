@@ -13,7 +13,7 @@ For computing the classification accuracy.
 
 3. Details:
 
-The model is based on ResNet18 with only chaning the
+The model is based on ResNet18 with only changing the
 last linear layer. The model is trained on iclevr dataset
 with 1 to 5 objects and the resolution is the upsampled 
 64x64 images from 32x32 images.
