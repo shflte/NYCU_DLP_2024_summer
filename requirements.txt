@@ -9,3 +9,4 @@ lit
 black
 pandas
 pyyaml
+diffusers
