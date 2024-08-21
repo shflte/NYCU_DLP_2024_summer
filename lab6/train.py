@@ -99,7 +99,7 @@ def train(config):
         model.train()
         for images, labels in tqdm(train_dataloader):
             # Prepare data
-            images = images.cuda()
+            images = images.cuda() * 2 - 1
             labels = labels.cuda()
 
             # Add noise
