@@ -9,7 +9,7 @@ DLP summer 2024 Lab6 classifier
 
 2. Purpose:
 
-For computing the classification accruacy.
+For computing the classification accuracy.
 
 3. Details:
 
