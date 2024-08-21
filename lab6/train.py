@@ -1,15 +1,67 @@
+import os
 import yaml
 import torch
-import torchvision
 from tqdm import tqdm
 from torch import nn
-from torch.nn import functional as F
 from torch.utils.data import DataLoader
 from diffusers import DDPMScheduler
-from matplotlib import pyplot as plt
 from utils import set_random_seed, show_losses
 from dataset import CLEVRDataset
 from models.conditional_unet import ClassConditionedUnet
+
+
+def load_checkpoint(model, optimizer, checkpoint_dir="checkpoints"):
+    """
+    Load the latest checkpoint if available.
+
+    Args:
+        model (nn.Module): The model to load the state_dict into.
+        optimizer (torch.optim.Optimizer): The optimizer to load the state_dict into.
+        checkpoint_dir (str): Directory where checkpoints are saved.
+
+    Returns:
+        int: The epoch number to start training from.
+    """
+    if not os.path.exists(checkpoint_dir):
+        return 0
+    checkpoints = [f for f in os.listdir(checkpoint_dir) if f.endswith(".pth")]
+    if not checkpoints:
+        print("No checkpoints found.")
+        return 0
+
+    latest_checkpoint = max(
+        checkpoints, key=lambda x: int(x.split("_")[1].split(".")[0])
+    )
+    checkpoint_path = os.path.join(checkpoint_dir, latest_checkpoint)
+    print(f"Loading checkpoint: {checkpoint_path}")
+    checkpoint = torch.load(checkpoint_path)
+    model.load_state_dict(checkpoint["model_state_dict"])
+    optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+    start_epoch = checkpoint["epoch"] + 1
+    return start_epoch
+
+
+def save_checkpoint(model, optimizer, epoch, checkpoint_dir="checkpoints"):
+    """
+    Save the current model and optimizer state.
+
+    Args:
+        model (nn.Module): The model to save.
+        optimizer (torch.optim.Optimizer): The optimizer to save.
+        epoch (int): The current epoch number.
+        checkpoint_dir (str): Directory where checkpoints are saved.
+    """
+    os.makedirs(checkpoint_dir, exist_ok=True)
+    checkpoint_path = os.path.join(checkpoint_dir, f"epoch_{epoch}.pth")
+    torch.save(
+        {
+            "epoch": epoch,
+            "model_state_dict": model.state_dict(),
+            "optimizer_state_dict": optimizer.state_dict(),
+        },
+        checkpoint_path,
+    )
+    print(f"Checkpoint saved: {checkpoint_path}")
 
 
 def train(config):
@@ -27,20 +79,23 @@ def train(config):
     model = ClassConditionedUnet(num_classes=config["num_classes"])
     model = model.cuda()
 
+    # Optimizer
+    optimizer = torch.optim.Adam(model.parameters(), lr=config["learning_rate"])
+
+    # Load checkpoint if available
+    start_epoch = load_checkpoint(model, optimizer, checkpoint_dir="checkpoints")
+
     # Noise scheduler
     noise_scheduler = DDPMScheduler(
         num_train_timesteps=1000, beta_schedule="squaredcos_cap_v2"
     )
-
-    # Optimizer
-    optimizer = torch.optim.Adam(model.parameters(), lr=config["learning_rate"])
 
     # Loss function
     criterion = nn.MSELoss()
 
     # Training loop
     losses = []
-    for epoch in range(config["epochs"]):
+    for epoch in range(start_epoch, config["epochs"]):
         model.train()
         for images, labels in tqdm(train_dataloader):
             # Prepare data
@@ -67,10 +122,16 @@ def train(config):
         avg_loss = sum(losses) / len(losses)
         print(f"Finished epoch {epoch}. Loss: {avg_loss:.5f}")
 
+        # Save the model every 10 epochs
+        if (epoch + 1) % 10 == 0:
+            save_checkpoint(
+                model, optimizer, epoch, checkpoint_dir=config["checkpoint_dir"]
+            )
+
     # Plot the loss values
     show_losses(losses)
 
-    # Save the model
+    # Save the final model
     torch.save(model.state_dict(), config["model_path"])
 
 
