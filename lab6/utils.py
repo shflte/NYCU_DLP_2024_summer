@@ -1,10 +1,9 @@
 import random
+import os
 import numpy as np
 import torch
-import torch.nn.functional as F
-import torchvision
+import torchvision.utils as vutils
 from matplotlib import pyplot as plt
-from PIL import Image
 
 
 def set_random_seed(seed):
@@ -18,23 +17,6 @@ def set_random_seed(seed):
     torch.backends.cudnn.benchmark = False
 
 
-def show_images(x):
-    """Given a batch of images x, make a grid and convert to PIL"""
-    x = x * 0.5 + 0.5
-    grid = torchvision.utils.make_grid(x)
-    grid_im = grid.detach().cpu().permute(1, 2, 0).clip(0, 1) * 255
-    grid_im = Image.fromarray(np.array(grid_im).astype(np.uint8))
-    return grid_im
-
-
-def make_grid(images, size=64):
-    """Given a list of PIL images, stack them together into a line for easy viewing"""
-    output_im = Image.new("RGB", (size * len(images), size))
-    for i, im in enumerate(images):
-        output_im.paste(im.resize((size, size)), (i * size, 0))
-    return output_im
-
-
 def show_losses(losses):
     plt.figure(figsize=(10, 5))
     plt.plot(losses, label="Training loss")
@@ -42,3 +24,39 @@ def show_losses(losses):
     plt.ylabel("Loss")
     plt.legend()
     plt.savefig(f"loss.png")
+
+
+def show_denoising_grid(images, result_dir, normalize=True):
+    """
+    Display a grid of 11 images in a single row using matplotlib.
+
+    Args:
+        images (Tensor): A batch of images, shape (image_nums, C, H, W)
+        normalize (bool): If True, normalize the images to range [0, 1]
+    """
+    grid = vutils.make_grid(images, nrow=11, normalize=normalize, padding=2)
+
+    plt.figure(figsize=(20, 5))
+    plt.imshow(grid.permute(1, 2, 0).cpu().numpy())
+    plt.title("Denoising Results")
+    plt.axis("off")
+    os.makedirs(result_dir, exist_ok=True)
+    plt.savefig(os.path.join(result_dir, "denoising_results.png"))
+
+
+def show_test_results_grid(images, result_dir, normalize=True):
+    """
+    Display a grid of images in 4 rows with 8 images per row using matplotlib.
+
+    Args:
+        images (Tensor): A batch of images, shape (image_nums, C, H, W)
+        normalize (bool): If True, normalize the images to range [0, 1]
+    """
+    grid = vutils.make_grid(images, nrow=8, normalize=normalize, padding=2)
+
+    plt.figure(figsize=(20, 10))
+    plt.imshow(grid.permute(1, 2, 0).cpu().numpy())
+    plt.title("Test Results")
+    plt.axis("off")
+    os.makedirs(result_dir, exist_ok=True)
+    plt.savefig(os.path.join(result_dir, "test_results.png"))
