@@ -9,12 +9,13 @@ result_dir: "results"
 
 # Model parameters
 num_classes: 24
-model_path: "model.pt"
+model_path: "model.pth"
 
 # Training parameters
+checkpoint_dir: "checkpoints"
 learning_rate: 0.001
-batch_size: 32
-epochs: 5
+batch_size: 64
+epochs: 50
 
 image_size: 64
 denoise_steps: 1000
