@@ -6,7 +6,9 @@ from torch import nn
 from torch.utils.data import DataLoader
 from diffusers import DDPMScheduler
 from utils import set_random_seed, show_losses
-from dataset import CLEVRDataset
+from dataset import CLEVRDataset, CLEVRDatasetEval
+from evaluator import evaluation_model
+
 from models.conditional_unet import ClassConditionedUnet
 
 
@@ -64,6 +66,47 @@ def save_checkpoint(model, optimizer, epoch, checkpoint_dir="checkpoints"):
     print(f"Checkpoint saved: {checkpoint_path}")
 
 
+def validate(model, config):
+    # Load the evaluation dataset
+    val_dataset = CLEVRDatasetEval(
+        eval_json=config["eval_json_path"],
+        objects_json=config["objects_json_path"],
+    )
+    val_dataloader = DataLoader(val_dataset, batch_size=32)
+
+    # Evaluation model
+    evaluator = evaluation_model()
+
+    # Noise scheduler
+    noise_scheduler = DDPMScheduler(
+        num_train_timesteps=config["denoise_steps"], beta_schedule="squaredcos_cap_v2"
+    )
+
+    # Generate images and evaluate
+    model.eval()
+    total_acc = 0
+    total_samples = 0
+    for labels in val_dataloader:
+        labels = labels.cuda()
+        x = torch.randn((32, 3, 64, 64)).cuda()
+        for t in range(config["denoise_steps"]):
+            with torch.no_grad():
+                residual = model(x, t, labels)
+            x = noise_scheduler.step(residual, t, x).prev_sample
+
+        # Evaluate the generated images
+        acc = evaluator.eval(x, labels)
+
+        # Accumulate accuracy
+        batch_size = labels.size(0)
+        total_acc += acc * batch_size
+        total_samples += batch_size
+
+    # Calculate the final average accuracy
+    final_acc = total_acc / total_samples
+    return round(final_acc, 3)
+
+
 def train(config):
     # Dataset
     dataset = CLEVRDataset(
@@ -95,6 +138,7 @@ def train(config):
 
     # Training loop
     losses = []
+    accuracies = []
     for epoch in range(start_epoch, config["epochs"]):
         model.train()
         for images, labels in tqdm(train_dataloader):
@@ -125,6 +169,12 @@ def train(config):
 
         avg_loss = sum(losses) / len(losses)
         print(f"Finished epoch {epoch}. Loss: {avg_loss:.5f}")
+
+        # Validate the model every 5 epochs
+        if (epoch + 1) % 5 == 0:
+            acc = validate(model, config)
+            accuracies.append(acc)
+            print(f"Validation accuracy: {acc}")
 
         # Save the model every 10 epochs
         if (epoch + 1) % 10 == 0:
