@@ -87,7 +87,7 @@ def train(config):
 
     # Noise scheduler
     noise_scheduler = DDPMScheduler(
-        num_train_timesteps=1000, beta_schedule="squaredcos_cap_v2"
+        num_train_timesteps=config["denoise_steps"], beta_schedule="squaredcos_cap_v2"
     )
 
     # Loss function
@@ -99,12 +99,16 @@ def train(config):
         model.train()
         for images, labels in tqdm(train_dataloader):
             # Prepare data
-            images = images.cuda() * 2 - 1
+            images = images.cuda()
             labels = labels.cuda()
 
             # Add noise
             noise = torch.randn_like(images)
-            timesteps = torch.randint(0, 999, (images.shape[0],)).long().cuda()
+            timesteps = (
+                torch.randint(0, config["denoise_steps"] - 1, (images.shape[0],))
+                .long()
+                .cuda()
+            )
             noisy_images = noise_scheduler.add_noise(images, noise, timesteps)
 
             # Forward pass
