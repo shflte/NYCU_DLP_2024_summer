@@ -5,7 +5,7 @@ from tqdm import tqdm
 from torch import nn
 from torch.utils.data import DataLoader
 from diffusers import DDPMScheduler
-from utils import set_random_seed, show_losses
+from utils import set_random_seed, show_losses, show_accuracies
 from dataset import CLEVRDataset, CLEVRDatasetEval
 from evaluator import evaluation_model
 
@@ -148,15 +148,15 @@ def train(config):
 
             # Add noise
             noise = torch.randn_like(images)
-            timesteps = (
+            timestamp = (
                 torch.randint(0, config["denoise_steps"] - 1, (images.shape[0],))
                 .long()
                 .cuda()
             )
-            noisy_images = noise_scheduler.add_noise(images, noise, timesteps)
+            noisy_images = noise_scheduler.add_noise(images, noise, timestamp)
 
             # Forward pass
-            predictions = model(noisy_images, timesteps, labels)
+            predictions = model(noisy_images, timestamp, labels)
             loss = criterion(predictions, noise)
 
             # Backward pass
@@ -184,6 +184,7 @@ def train(config):
 
     # Plot the loss values
     show_losses(losses)
+    show_accuracies(accuracies)
 
     # Save the final model
     torch.save(model.state_dict(), config["model_path"])
