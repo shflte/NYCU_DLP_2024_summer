@@ -42,10 +42,9 @@ class CLEVRDataset(Dataset):
         if not self.transform:
             self.transform = transforms.Compose(
                 [
-                    transforms.Resize(72),
-                    transforms.CenterCrop(64),
+                    transforms.Resize((64, 64)),
                     transforms.ToTensor(),
-                    # transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),
+                    transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5]),
                 ]
             )
         image = self.transform(image)
