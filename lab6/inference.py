@@ -83,9 +83,7 @@ if __name__ == "__main__":
     denoise_images_tensor = torch.stack(denoise_images_list, axis=0)
     denoise_images_tensor = denoise_images_tensor.permute(1, 0, 2, 3, 4)
     for i, denoise_images in enumerate(denoise_images_tensor):
-        result_path = os.path.join(
-            config["result_dir"], "denoise", f"label_{i}.png"
-        )
+        result_path = os.path.join(config["result_dir"], "denoise", f"label_{i}.png")
         grid = vutils.make_grid(denoise_images, nrow=11, normalize=True, padding=2)
         vutils.save_image(grid, result_path)
 
