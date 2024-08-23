@@ -21,13 +21,15 @@ def inference(config, dataloader, model):
     save_timesteps = (
         torch.linspace(0, config["denoise_steps"] - 1, steps=11).long().tolist()
     )  # timesteps to save images
-    denoise_images_list = [[] for _ in range(len(eval_dataset))]
+    denoise_images_list = []
     final_results = []
 
     # Inference loop
     for i, labels in enumerate(dataloader):
         labels = labels.cuda()
-        x = torch.randn((1, 3, config["image_size"], config["image_size"])).cuda()
+        x = torch.randn(
+            (config["batch_size"], 3, config["image_size"], config["image_size"])
+        ).cuda()
 
         for t_idx, t in tqdm(
             enumerate(noise_scheduler.timesteps), total=len(noise_scheduler.timesteps)
@@ -40,9 +42,9 @@ def inference(config, dataloader, model):
             x = noise_scheduler.step(residual, t, x).prev_sample
 
             if t_idx in save_timesteps:
-                denoise_images_list[i].append(x.clone().cpu().squeeze())
+                denoise_images_list.append(x.clone().cpu())
 
-        final_results.append(x.clone().cpu().squeeze())
+        final_results = x.clone().cpu()
 
     return denoise_images_list, final_results
 
@@ -60,7 +62,9 @@ if __name__ == "__main__":
         eval_json=config["eval_json_path"],
         objects_json=config["objects_json_path"],
     )
-    eval_dataloader = DataLoader(eval_dataset, batch_size=1, shuffle=False)
+    eval_dataloader = DataLoader(
+        eval_dataset, batch_size=config["batch_size"], shuffle=False
+    )
 
     # Load the model
     model = ClassConditionedUnet(num_classes=config["num_classes"])
@@ -75,10 +79,13 @@ if __name__ == "__main__":
     for dir_name in directories:
         os.makedirs(os.path.join(config["result_dir"], dir_name), exist_ok=True)
 
-    # Save denoising results
-    for i, denoise_images in enumerate(denoise_images_list):
-        denoise_images = torch.stack(denoise_images)
-        result_path = os.path.join(config["result_dir"], "denoise", f"label_{i}.png")
+    # Save denoising process results
+    denoise_images_tensor = torch.stack(denoise_images_list, axis=0)
+    denoise_images_tensor = denoise_images_tensor.permute(1, 0, 2, 3, 4)
+    for i, denoise_images in enumerate(denoise_images_tensor):
+        result_path = os.path.join(
+            config["result_dir"], "denoise", f"label_{i}.png"
+        )
         grid = vutils.make_grid(denoise_images, nrow=11, normalize=True, padding=2)
         vutils.save_image(grid, result_path)
 
@@ -91,15 +98,14 @@ if __name__ == "__main__":
 
     # Save test results grid
     result_path = os.path.join(config["result_dir"], "test_results.png")
-    final_results_tensor = torch.stack(final_results)
-    grid = vutils.make_grid(final_results_tensor, nrow=8, normalize=True, padding=2)
+    grid = vutils.make_grid(final_results, nrow=8, normalize=True, padding=2)
     vutils.save_image(grid, result_path)
 
     # Evaluate the results
     evaluator = evaluation_model()
-    final_results_tensor = final_results_tensor.cuda()
+    final_results = final_results.cuda()
     labels = eval_dataset.labels.cuda()
-    accuracy = evaluator.eval(final_results_tensor, labels)
+    accuracy = evaluator.eval(final_results, labels)
     print(
         f"Classification accuracy: {accuracy}, testing data: {config["eval_json_path"]}"
     )
