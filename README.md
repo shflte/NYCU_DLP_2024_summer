@@ -11,6 +11,7 @@ Instructors: 陳永昇、彭文孝
 - Implement UNet & ResUNet34 (ResNet34 + UNet) respectively for semantic segmentation.
 - [Deep Residual Learning for Image Recognition](https://arxiv.org/abs/1512.03385)
 - [U-Net: Convolutional Networks for Biomedical Image Segmentation](https://arxiv.org/abs/1505.04597)
+- [ResUNet-a: a deep learning framework for semantic segmentation of remotely sensed data](https://arxiv.org/abs/1904.00592)
 
 ## Lab4: Conditional VAE for Video Prediction
 - Implement reparameterization trick for Conditional VAE.
